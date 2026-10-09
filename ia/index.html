@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DespachoPro · Nueva guía (alternativa generada con IA)</title>
+<style>
+  :root { --ink:#101828; --mut:#475467; --brand:#3538CD; --brand2:#6172F3; --ok:#027A48; --okbg:#ECFDF3; --er:#B42318; --erbg:#FEF3F2; --wr:#B54708; --wrbg:#FFFAEB; --ln:#E4E7EC; --bg:#F9FAFB; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 "Segoe UI", Arial, sans-serif; color:var(--ink); background:var(--bg); display:flex; min-height:100vh; }
+  aside { width:240px; background:#101828; color:#D0D5DD; padding:20px 16px; }
+  aside .logo { color:#fff; font-weight:700; font-size:18px; margin-bottom:24px; }
+  aside a { display:block; color:#D0D5DD; text-decoration:none; padding:9px 12px; border-radius:8px; margin-bottom:4px; }
+  aside a.on { background:#344054; color:#fff; }
+  .main { flex:1; padding:28px 36px; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  .mut { color:var(--mut); }
+  .stepper { display:flex; gap:10px; margin:20px 0 24px; }
+  .step { flex:1; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; background:#fff; border:1px solid var(--ln); }
+  .step .n { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; background:#EAECF0; font-weight:700; }
+  .step.on { border-color:var(--brand); box-shadow:0 0 0 3px #E0E7FF; } .step.on .n { background:var(--brand); color:#fff; }
+  .step.done .n { background:var(--ok); color:#fff; }
+  .cols { display:grid; grid-template-columns:1fr 300px; gap:24px; align-items:start; }
+  .card { background:#fff; border:1px solid var(--ln); border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+  table { width:100%; border-collapse:collapse; } th, td { padding:11px 10px; border-bottom:1px solid var(--ln); text-align:left; } th { color:var(--mut); font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+  tr:hover td { background:#F5F8FF; }
+  label { display:block; font-weight:600; font-size:14px; margin:12px 0 6px; }
+  input, select { width:100%; font:inherit; padding:10px 12px; border:1px solid #D0D5DD; border-radius:8px; }
+  input:focus, select:focus, button:focus-visible { outline:none; box-shadow:0 0 0 4px #C7D7FE; border-color:var(--brand2); }
+  .btn { font:inherit; font-weight:600; padding:10px 18px; border-radius:8px; border:1px solid #D0D5DD; background:#fff; cursor:pointer; }
+  .btn:hover { background:#F9FAFB; } .btn.pri { background:var(--brand); border-color:var(--brand); color:#fff; } .btn.pri:hover { background:#2D31A6; }
+  .foot { display:flex; justify-content:space-between; margin-top:20px; }
+  .sum div { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--ln); }
+  .chip { display:inline-flex; gap:6px; align-items:center; background:#F4F3FF; color:#5925DC; border-radius:999px; padding:4px 10px; font-size:13px; font-weight:600; }
+  .alert { border-radius:10px; padding:14px 16px; margin:14px 0; display:flex; gap:12px; align-items:flex-start; }
+  .alert.wr { background:var(--wrbg); border:1px solid #FEC84B; color:var(--wr); } .alert.er { background:var(--erbg); border:1px solid #FDA29B; color:var(--er); } .alert.ok { background:var(--okbg); border:1px solid #6CE9A6; color:var(--ok); }
+  .opt { border:2px solid var(--ln); border-radius:10px; padding:14px; margin:8px 0; cursor:pointer; display:flex; gap:10px; }
+  .opt.sel { border-color:var(--brand); background:#F5F8FF; }
+  .tl li { margin:6px 0; }
+  .fab { position:fixed; right:28px; bottom:28px; background:var(--brand); color:#fff; border:none; border-radius:999px; padding:14px 18px; font:inherit; font-weight:600; box-shadow:0 8px 20px rgba(53,56,205,.35); }
+  .toast { position:fixed; top:20px; right:24px; background:#101828; color:#fff; padding:12px 16px; border-radius:10px; }
+</style>
+</head>
+<body>
+<aside><div class="logo">🚚 DespachoPro</div><a class="on" href="#1">Nueva guía</a><a href="#1">Pedidos</a><a href="#1">Guías</a><a href="#1">Reportes</a></aside>
+<div class="main" id="app"></div>
+<button class="fab" aria-label="Abrir asistente de ayuda">💬 ¿Necesitas ayuda?</button>
+<script>
+const O = [['PE07-0001201','Ferretería La 30','Manizales',18,'$ 441.200'],['PE31-0001202','Agro El Cafetal','Manizales',12,'$ 719.100'],['PE14-0001203','Distribuidora Andina','Salamina',16,'$ 506.200'],['PE05-0001204','Tienda La Esquina','Manizales',9,'$ 210.000']];
+const S = { sel:new Set(['PE07-0001201','PE14-0001203']), opt:'group', tries:0 };
+const app = document.getElementById('app');
+const steps = n => `<div class="stepper">${['Seleccionar pedidos','Revisar agrupación','Datos y empaque','Confirmar despacho'].map((t,i)=>`<div class="step ${i+1===n?'on':i+1<n?'done':''}"><span class="n">${i+1<n?'✓':i+1}</span><span>${t}</span></div>`).join('')}</div>`;
+const side = () => { const sel = O.filter(o=>S.sel.has(o[0])); return `<div class="card sum"><b>Resumen de la guía</b>
+  <div><span>Pedidos</span><b>${sel.length}</b></div><div><span>Unidades</span><b>${sel.reduce((a,o)=>a+o[3],0)}</b></div>
+  <div><span>Ciudades</span><b>${new Set(sel.map(o=>o[2])).size}</b></div><div><span>Peso estimado ✨</span><b>${sel.reduce((a,o)=>a+o[3],0)*5.8|0} kg</b></div>
+  <p class="mut" style="font-size:13px">✨ El peso se estima automáticamente con IA a partir de las unidades.</p><button class="btn" style="width:100%">Guardar borrador</button></div>`; };
+const head = n => `<h1>Nueva guía de despacho</h1><p class="mut">Paso ${n} de 4 · Los cambios se guardan automáticamente</p>${steps(n)}`;
+
+const V = {
+ '1': () => `${head(1)}<div class="cols"><div class="card">
+   <label for="q">Buscar pedidos</label><input id="q" placeholder="Número de pedido, cliente o ciudad">
+   <p><span class="chip">✨ Sugerencia IA: selecciona los pedidos de Manizales para una ruta óptima</span></p>
+   <table><thead><tr><th></th><th>Pedido</th><th>Cliente</th><th>Ciudad</th><th>Uds.</th></tr></thead><tbody>
+   ${O.map(o=>`<tr><td><input type="checkbox" aria-label="Seleccionar ${o[0]}" ${S.sel.has(o[0])?'checked':''} style="width:auto"></td><td>${o[0]}</td><td>${o[1]}</td><td>${o[2]}</td><td>${o[3]}</td></tr>`).join('')}</tbody></table>
+   <div class="foot"><span class="mut">${S.sel.size} de ${O.length} seleccionados</span><a class="btn pri" href="#2">Continuar →</a></div></div>${side()}</div>`,
+ '2': () => `${head(2)}<div class="cols"><div class="card">
+   <div class="alert wr" role="alert"><b>⚠</b><div><b>No puedes continuar todavía:</b> los pedidos seleccionados van a 2 ciudades (Manizales y Salamina). Una guía solo puede tener un destino. Elige cómo resolverlo.</div></div>
+   <div class="opt ${S.opt==='split'?'sel':''}"><input type="radio" name="o" id="o1" ${S.opt==='split'?'checked':''} style="width:auto"><label for="o1" style="margin:0">Dividir en 2 guías <span class="mut">(una por ciudad)</span></label></div>
+   <div class="opt ${S.opt==='group'?'sel':''}"><input type="radio" name="o" id="o2" ${S.opt==='group'?'checked':''} style="width:auto"><label for="o2" style="margin:0">Agrupar en una guía con destino Manizales <span class="chip">✨ Recomendado por IA</span></label></div>
+   <div class="foot"><a class="btn" href="#1">← Atrás</a><a class="btn pri" href="#3">Continuar →</a></div></div>${side()}</div>`,
+ '3': () => `${head(3)}<div class="cols"><div class="card">
+   <label for="d">Destinatario</label><input id="d" value="Ferretería La 30">
+   <label for="t">Transportadora</label><select id="t"><option>Transportes El Roble</option></select>
+   <label for="c">Conductor</label><select id="c"><option>Andrés Mejía · ABC123</option></select>
+   <p><span class="chip">✨ Conductor sugerido por IA según disponibilidad</span></p>
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px"><div><label for="ca">Cajas</label><input id="ca" value="6"></div><div><label for="li">Líos</label><input id="li" value="2"></div><div><label for="fl">Flete</label><input id="fl" value="$ 30.000"></div></div>
+   <div class="foot"><a class="btn" href="#2">← Atrás</a><a class="btn pri" href="#4">Continuar →</a></div></div>${side()}</div>`,
+ '4': () => `${head(4)}<div class="cols"><div class="card"><b>Revisa antes de despachar</b>
+   <p class="mut">Ferretería La 30 · Manizales · Transportes El Roble · Andrés Mejía · 6 cajas · 2 líos · $ 30.000</p>
+   <div id="m"></div><div class="foot"><a class="btn" href="#3">← Atrás</a><button class="btn pri" id="go">🚚 Confirmar y despachar</button></div></div>${side()}</div>`,
+ '4e': () => V['4']().replace('<div id="m"></div>', `<div id="m"><div class="alert er" role="alert"><b>✕</b><div><b>No pudimos despachar la guía.</b> El servidor tardó demasiado en responder (código 504). Tu información está a salvo. <button class="btn" id="re">Intentar de nuevo</button></div></div></div>`),
+ '5': () => `<h1>¡Listo! 🎉</h1><p class="mut">Guía TMS-2026-0412 despachada</p>${steps(5)}
+   <div class="cols"><div class="card"><div class="alert ok" role="status"><b>✓</b><div><b>Guía despachada con éxito.</b> El conductor ya puede verla. Estado actual: En tránsito.</div></div>
+   <b>Historial</b><ol class="tl"><li>09:02 · Guía creada · Marta R.</li><li>09:21 · Despachada · Marta R.</li></ol>
+   <div class="foot"><a class="btn" href="#1">Crear otra guía</a><button class="btn pri">Compartir por WhatsApp</button></div></div>${side()}</div>
+   <div class="toast" role="status">✓ Guía despachada · Deshacer</div>`
+};
+function route(){ const h=(location.hash||'#1').slice(1); app.innerHTML=(V[h]||V['1'])();
+  const go=document.getElementById('go'); if(go) go.onclick=()=>{ S.tries++; location.hash = S.tries===1?'#4e':'#5'; };
+  const re=document.getElementById('re'); if(re) re.onclick=()=>{ location.hash='#5'; };
+  document.querySelectorAll('.opt input').forEach(r=>r.onchange=()=>{ S.opt=r.id==='o1'?'split':'group'; route(); });
+}
+window.addEventListener('hashchange',route); route();
+</script>
+</body>
+</html>
