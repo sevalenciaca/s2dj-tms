@@ -1,0 +1,30 @@
+# Pipeline de calidad de la versión C (HCI Lab · Calidad: E2E del flujo crítico + axe sin infracciones serias).
+name: Calidad C
+
+on:
+  pull_request:
+    paths: ["final-c/**", ".github/workflows/calidad-c.yml"]
+  push:
+    branches: [main]
+    paths: ["final-c/**", ".github/workflows/calidad-c.yml"]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final-c/pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - name: Servir el sitio
+        working-directory: .
+        run: python3 -m http.server 8765 --bind 127.0.0.1 &
+      - name: Aceptación de HZ-01 (A como línea base, C debe pasar todo)
+        run: node hz01_aceptacion.js http://127.0.0.1:8765/
+      - name: E2E del flujo crítico solo con teclado + axe (1440 y 390 px)
+        run: node e2e_flujo_teclado.js http://127.0.0.1:8765/

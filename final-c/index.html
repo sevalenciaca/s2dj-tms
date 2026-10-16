@@ -59,6 +59,12 @@
     .pager { flex-wrap:wrap; }
     .dialog .row { flex-wrap:wrap; }
     input, select { max-width:100%; }
+    /* HCI Lab · Ergonomía: objetivos táctiles amplios y acción principal alcanzable con el pulgar */
+    button, input:not([type=checkbox]), select { min-height:44px; }
+    tbody input[type=checkbox] { width:24px !important; height:24px; }
+    tbody td { padding-top:12px; padding-bottom:12px; }
+    .bar button.pri { flex:1 1 100%; }
+    .pager button { min-width:96px; }
   }
   .dialog h2 { margin:0 0 8px; font-size:22px; }
   .dialog .acts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
@@ -75,6 +81,8 @@
   .ayuda dl { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:8px 0 4px; font-size:15px; }
   .ayuda dt { font-weight:bold; } .ayuda dd { margin:0; }
   @media (max-width: 760px) { .ayuda dl { grid-template-columns:1fr; } }
+  nav.migas { width:auto; background:none; border:0; padding:0; margin:0 0 6px; font-size:14px; color:var(--tx2); display:block; }
+  nav.migas a { display:inline; padding:0; color:var(--fo); text-decoration:underline; border:0; background:none; font-weight:normal; }
   .ver { font-size:13px; opacity:.85; margin-left:8px; }
   #app:focus { outline:none; }
   .steps { display:flex; gap:8px; margin:14px 0 4px; max-width:820px; list-style:none; padding:0; }
@@ -89,7 +97,7 @@
 <body>
 <header><b>TMS Suprokom<span class="ver">· versión C</span></b><span>Marta R. · Bodega</span></header>
 <div class="wrap">
-  <nav aria-label="Menú principal"><a href="#p1" aria-current="page">Pedidos pendientes</a><a href="#guias">Guías</a><a href="formatos.html">Otros formatos</a></nav>
+  <nav aria-label="Menú principal"><a href="#p1">Pedidos pendientes</a><a href="#guias">Guías</a><a href="formatos.html">Otros formatos</a></nav>
   <main id="app" tabindex="-1"></main>
 </div>
 <div id="live" class="sr" aria-live="polite" style="position:absolute;left:-9999px"></div>
@@ -120,11 +128,13 @@ function guia() {
 const app = document.getElementById('app'), live = document.getElementById('live');
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
+// HCI Lab · patrón Navegación: ubicación actual visible y regreso reconocible
+const migas = () => `<nav class="migas" aria-label="Ruta"><a href="#p1">Pedidos pendientes</a> <span aria-hidden="true">›</span> <span aria-current="page">Guía TMS-2026-0412</span></nav>`;
 const stepper = n => `<ol class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</li>`).join('')}</ol>`;
 // HZ-03: horas reales del reloj (sincronización, guardado e historial)
 const hhmm = () => new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
 S.syncAt = hhmm(); S.savedAt = hhmm(); S.q = '';
-const touch = () => { S.savedAt = hhmm(); const e = document.querySelector('.saved[data-guardado]'); if (e) e.textContent = `✓ Guardado automáticamente · ${S.savedAt}`; };
+const touch = () => { S.savedAt = hhmm(); const e = document.querySelector('.saved[data-guardado]'); if (e) e.textContent = `✓ Guardado en esta sesión · ${S.savedAt}`; };
 const log = (st) => { const t = hhmm(); S.savedAt = t; S.hist.push({t, st, by:'Marta R.'}); };
 // HZ-02: búsqueda por pedido, cliente o ciudad, sin distinguir tildes ni mayúsculas
 const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -185,7 +195,8 @@ function openDialog() {
       <h2 id="dt">Estos pedidos van a ${c.length} ciudades</h2>
       <div id="dd"><p style="margin:0 0 4px">Una guía debe tener un solo destino.</p><ul style="margin:0;padding-left:20px">${byCity}</ul></div>
       <div class="acts">
-        <button class="pri" id="split">Crear una guía por ciudad (recomendado)</button>
+        <button class="pri" id="split" aria-describedby="porque">Crear una guía por ciudad (recomendado)</button>
+        <p id="porque" class="sub" style="margin:-2px 0 4px">Recomendado porque cada ciudad sale con su propia guía, conductor y ruta. Agrupar obliga a enviar todo a un solo destino.</p>
         <button id="group">Agrupar en una sola y elegir destino</button>
         <div id="dest" hidden><label for="destsel">Destino de la guía</label><select id="destsel">${c.map(ci=>`<option>${ci}</option>`).join('')}</select>
           <button class="pri" id="groupok" style="margin-top:8px">Crear guía con este destino</button></div>
@@ -209,7 +220,7 @@ function closeDialog(silent) { const sc = document.getElementById('scrim'); if (
 function p3() {
   if (!S.hist.length) log('Pendiente');
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}${ayuda()}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
+    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}${ayuda()}<p class="saved" data-guardado>✓ Guardado en esta sesión · ${S.savedAt}</p>
     ${(()=>{ const g = guia();
       const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${413+i} (${c})`).join(', ')}.`
                 : S.group==='group' ? `Guía agrupada con destino ${g.city}.` : '';
@@ -231,14 +242,32 @@ function p3() {
     log('En preparación'); go('#p4');
   };
 }
+// HCI Lab · patrón Formulario: regla visible, error junto al campo y datos conservados
+function validarEmpaque() {
+  const reglas = [
+    ['caj', v => /^\d+$/.test(v.trim()), '✕ Escribe las cajas como número entero (0 o más).'],
+    ['lio', v => /^\d+$/.test(v.trim()), '✕ Escribe los líos como número entero (0 o más).'],
+    ['fle', v => /^\d{1,3}(\.\d{3})*$|^\d+$/.test(v.trim()) && +v.replace(/\./g,'') > 0, '✕ Escribe el flete en pesos, solo con números (por ejemplo 30.000).'],
+  ];
+  let primero = null;
+  for (const [id, ok, msg] of reglas) {
+    const inp = document.getElementById(id), err = document.getElementById(id + '-err'), bien = ok(inp.value);
+    err.hidden = bien; err.textContent = bien ? '' : msg;
+    if (bien) inp.removeAttribute('aria-invalid'); else { inp.setAttribute('aria-invalid', 'true'); primero = primero || inp; }
+  }
+  const caj = +document.getElementById('caj').value || 0, lio = +document.getElementById('lio').value || 0;
+  if (!primero && caj + lio === 0) { const e = document.getElementById('caj-err'); e.hidden = false; e.textContent = '✕ La guía necesita al menos una caja o un lío.'; document.getElementById('caj').setAttribute('aria-invalid','true'); primero = document.getElementById('caj'); }
+  if (primero) { primero.focus(); say('Revisa el empaque: hay un dato por corregir'); }
+  return !primero;
+}
 function p4(state) {
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}${ayuda()}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
+    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}${ayuda()}<p class="saved" data-guardado>✓ Guardado en esta sesión · ${S.savedAt}</p>
     <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
-      <div><label for="caj">Cajas</label><input id="caj" type="number" min="0" value="${S.cajas}"></div>
-      <div><label for="lio">Líos</label><input id="lio" type="number" min="0" value="${S.lios}"></div>
-      <div><label for="fle">Flete ($)</label><input id="fle" value="${S.flete}"></div></div></div>
+      <div><label for="caj">Cajas</label><input id="caj" inputmode="numeric" value="${S.cajas}" aria-describedby="caj-err"><div id="caj-err" class="fielderr" hidden></div></div>
+      <div><label for="lio">Líos</label><input id="lio" inputmode="numeric" value="${S.lios}" aria-describedby="lio-err"><div id="lio-err" class="fielderr" hidden></div></div>
+      <div><label for="fle">Flete ($)</label><input id="fle" inputmode="numeric" value="${S.flete}" aria-describedby="fle-ayuda fle-err"><div id="fle-ayuda" class="sub" style="margin-top:2px">Solo números; los puntos de miles son opcionales (30.000).</div><div id="fle-err" class="fielderr" hidden></div></div></div></div>
     <div id="m" role="alert"></div>
     <p>${state==='plat'
       ? '<button class="pri" id="desp">Despachar · pasa a En tránsito</button>'
@@ -249,6 +278,7 @@ function p4(state) {
   document.getElementById('back').onclick = ()=> go('#p3');
   const mov = document.getElementById('mov');
   mov.onclick = ()=>{
+    if (!validarEmpaque()) return;
     mov.disabled = true; mov.textContent = 'Moviendo…'; m.innerHTML = '';
     setTimeout(()=>{
       S.tries++;
@@ -323,7 +353,7 @@ function armUndo() { const btn = document.getElementById('undo'); if (btn) btn.o
 function p5() {
   app.innerHTML = `
     ${undoBanner()}
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}${ayuda()}
+    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}${ayuda()}
     <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${guia().cli} · ${guia().dir || guia().city} · ${TRA} · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete} · Pedidos: ${guia().lista}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
@@ -334,6 +364,8 @@ function go(h) { if (location.hash === h) route(); else location.hash = h; }
 function route() {
   const h = location.hash || '#p1';
   if (h !== '#p5') S.undoable = false;          // salir de P5 cierra la posibilidad de deshacer
+  const enPedidos = ['#p1','#p2','#guias'].includes(h);   // dentro de una guía, el menú no marca «Pedidos pendientes»
+  document.querySelectorAll('nav[aria-label="Menú principal"] a').forEach(a => { if (enPedidos && a.getAttribute('href') === '#p1') a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   if (h === '#p3' && !S.sel.size) { ['PE07-0001201','PE14-0001203'].forEach(i=>S.sel.add(i)); S.group = 'split'; }
   if (['#p4','#p4e','#p4p','#p5'].includes(h) && !S.sel.size) { S.sel.add('PE07-0001201'); S.group = 'single'; }
   if (h === '#p4' && !S.conductor) { S.conductor = 'Andrés Mejía · ABC123'; if (!S.hist.length) log('Pendiente'); if (S.hist.length<2) log('En preparación'); }
