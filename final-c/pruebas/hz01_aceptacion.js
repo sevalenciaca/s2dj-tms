@@ -54,7 +54,7 @@ async function casos(p, version, url, shot) {
   const espera = await p.textContent('#desp');
   await shot('C02_despachando');
   await p.waitForSelector('#undo');
-  ok('CA-03', espera === 'Despachando…' && (await h1(p)).includes('En tránsito') && /Disponible \d+ s/.test(await p.textContent('#undoleft')),
+  ok('CA-03', espera === 'Despachando…' && (await h1(p)).includes('En tránsito') && /mientras sigas en esta pantalla/.test(await p.textContent('#undoleft')),
      `espera «${espera}» · «${await h1(p)}» · ${await p.textContent('#undoleft')}`);
   await shot('C03_despachada_con_deshacer');
 
@@ -85,18 +85,20 @@ async function casos(p, version, url, shot) {
   return r;
 }
 
-async function plazo(b, url) {                   // CA-07 · el plazo para deshacer vence (reloj simulado)
+async function plazo(b, url) {                   // CA-07 · sin límite de tiempo (2.2.1); se cierra al salir de P5
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
   await p.clock.install();
   await p.goto(url + '#p4e'); await p.clock.runFor(1000);
   await p.click('#retry'); await p.clock.runFor(1000);
   await p.click('#desp'); await p.click('#confirm'); await p.clock.runFor(1000);
-  const antes = await p.$('#undo') !== null;
-  await p.clock.runFor(10500);
-  const despues = await p.$('#undo') !== null, aviso = await p.textContent('#undoleft');
+  await p.clock.runFor(120000);                  // dos minutos después
+  const tras2min = await p.$('#undo') !== null;
+  await p.click('#next'); await p.waitForSelector('#q');
+  await p.goBack(); await p.waitForTimeout(200);  // volver a P5 con el botón Atrás
+  const trasSalir = await p.$('#undo') !== null;
   await p.close();
-  return { version: 'C', id: 'CA-07', resultado: antes && !despues && /terminó/.test(aviso) ? 'PASA' : 'FALLA',
-           detalle: `Deshacer antes del plazo=${antes} · después=${despues} · «${aviso}»` };
+  return { version: 'C', id: 'CA-07', resultado: tras2min && !trasSalir ? 'PASA' : 'FALLA',
+           detalle: `Deshacer disponible tras 2 min=${tras2min} · tras pasar a la siguiente guía y volver=${trasSalir}` };
 }
 
 (async () => {

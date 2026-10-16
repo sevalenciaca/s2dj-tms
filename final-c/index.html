@@ -76,9 +76,9 @@ const ORDERS = [
   {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300'},
 ];
 const S = { sel:new Set(), page:1, conductor:'', cajas:'6', lios:'2', flete:'30.000', tries:0, hist:[], group:'split',
-  dtries:0, undoUntil:0, undoTimer:null };
-// HZ-01: plazo para deshacer el despacho y fallo simulado del despacho (solo con ?simular=fallo-despacho)
-const UNDO_SECONDS = 10;
+  dtries:0, undoable:false };
+// HZ-01 (D-34): «Deshacer despacho» sin límite de tiempo mientras la guía siga en P5 (WCAG 2.2.1);
+// se cierra al pasar a la siguiente guía. Fallo simulado del despacho solo con ?simular=fallo-despacho.
 const FAIL_DISPATCH = new URLSearchParams(location.search).get('simular') === 'fallo-despacho';
 const DEST = { cli:'Ferretería La 30', city:'Manizales', tra:'Transportes El Roble', con:'Andrés Mejía · ABC123' };
 const app = document.getElementById('app'), live = document.getElementById('live');
@@ -240,34 +240,20 @@ function dispatch() {
       document.getElementById('dretry').focus();
       return;
     }
-    log('En tránsito'); S.undoUntil = Date.now() + UNDO_SECONDS*1000; go('#p5');
+    log('En tránsito'); S.undoable = true; go('#p5');
   }, 900);
 }
 function undoDispatch() {
-  clearInterval(S.undoTimer); S.undoUntil = 0;
+  S.undoable = false;
   log('Despacho deshecho → En plataforma'); S.undone = true;
   go('#p4p');
 }
 function undoBanner() {
-  const left = () => Math.max(0, Math.ceil((S.undoUntil - Date.now())/1000));
-  if (!S.undoUntil || left() === 0) return '<div class="msg ok" role="status">✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</div>';
+  if (!S.undoable) return '<div class="msg ok" role="status">✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</div>';
   return `<div class="msg ok undo" role="status"><span>✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</span>
-    <button id="undo">Deshacer despacho</button><span class="left" id="undoleft">Disponible ${left()} s</span></div>`;
+    <button id="undo">Deshacer despacho</button><span class="left" id="undoleft">Puedes deshacerlo mientras sigas en esta pantalla.</span></div>`;
 }
-function armUndo() {
-  const btn = document.getElementById('undo'); if (!btn) return;
-  btn.onclick = undoDispatch;
-  clearInterval(S.undoTimer);
-  S.undoTimer = setInterval(()=>{
-    const s = Math.max(0, Math.ceil((S.undoUntil - Date.now())/1000)), el = document.getElementById('undoleft');
-    if (!el) { clearInterval(S.undoTimer); return; }
-    if (s === 0) { clearInterval(S.undoTimer); S.undoUntil = 0;
-      const u = document.getElementById('undo'); const hadFocus = document.activeElement === u;
-      u.remove(); el.textContent = 'El plazo para deshacer terminó.'; say('El plazo para deshacer terminó');
-      if (hadFocus) document.getElementById('next').focus();
-    } else el.textContent = `Disponible ${s} s`;
-  }, 250);
-}
+function armUndo() { const btn = document.getElementById('undo'); if (btn) btn.onclick = undoDispatch; }
 function p5() {
   app.innerHTML = `
     ${undoBanner()}
@@ -275,12 +261,13 @@ function p5() {
     <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">Ferretería La 30 · Cra 23 # 30-15, Manizales · Transportes El Roble · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
-  document.getElementById('next').onclick = ()=>{ clearInterval(S.undoTimer); Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, dtries:0, undoUntil:0, undone:false, hist:[], err:false}); go('#p1'); };
+  document.getElementById('next').onclick = ()=>{ Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, dtries:0, undoable:false, undone:false, hist:[], err:false}); go('#p1'); };
   armUndo();
 }
 function go(h) { if (location.hash === h) route(); else location.hash = h; }
 function route() {
   const h = location.hash || '#p1';
+  if (h !== '#p5') S.undoable = false;          // salir de P5 cierra la posibilidad de deshacer
   if (h === '#p3' && !S.sel.size) { ['PE07-0001201','PE14-0001203'].forEach(i=>S.sel.add(i)); }
   if (h === '#p4' && !S.conductor) { S.conductor = 'Andrés Mejía · ABC123'; if (!S.hist.length) log('Pendiente'); if (S.hist.length<2) log('En preparación'); }
   if (h === '#p5' && S.hist.length < 4) { S.conductor = S.conductor || 'x'; while (S.hist.length < 4) log(['Pendiente','En preparación','En plataforma','En tránsito'][S.hist.length]); }
