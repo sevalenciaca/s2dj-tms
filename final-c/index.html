@@ -69,18 +69,28 @@
 <div id="live" class="sr" aria-live="polite" style="position:absolute;left:-9999px"></div>
 <script>
 const ORDERS = [
-  {id:'PE07-0001201', cli:'Ferretería La 30', city:'Manizales', u:18, v:'$ 441.200'},
-  {id:'PE31-0001202', cli:'Agro El Cafetal', city:'Manizales', u:12, v:'$ 719.100'},
-  {id:'PE14-0001203', cli:'Distribuidora Andina', city:'Salamina', u:16, v:'$ 506.200'},
-  {id:'PE05-0001204', cli:'Tienda La Esquina', city:'Manizales', u:9, v:'$ 210.000'},
-  {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300'},
+  {id:'PE07-0001201', cli:'Ferretería La 30', city:'Manizales', u:18, v:'$ 441.200', dir:'Cra 23 # 30-15, Manizales', tel:'606 884 2210'},
+  {id:'PE31-0001202', cli:'Agro El Cafetal', city:'Manizales', u:12, v:'$ 719.100', dir:'Cl 48 # 22-10, Manizales', tel:'606 885 1020'},
+  {id:'PE14-0001203', cli:'Distribuidora Andina', city:'Salamina', u:16, v:'$ 506.200', dir:'Cra 6 # 4-21, Salamina', tel:'606 859 3310'},
+  {id:'PE05-0001204', cli:'Tienda La Esquina', city:'Manizales', u:9, v:'$ 210.000', dir:'Cl 65 # 23-05, Manizales', tel:'606 887 4455'},
+  {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300', dir:'Av. Santander # 70-12, Manizales', tel:'606 886 9090'},
 ];
 const S = { sel:new Set(), page:1, conductor:'', cajas:'6', lios:'2', flete:'30.000', tries:0, hist:[], group:'split',
   dtries:0, undoable:false };
 // HZ-01 (D-34): «Deshacer despacho» sin límite de tiempo mientras la guía siga en P5 (WCAG 2.2.1);
 // se cierra al pasar a la siguiente guía. Fallo simulado del despacho solo con ?simular=fallo-despacho.
 const FAIL_DISPATCH = new URLSearchParams(location.search).get('simular') === 'fallo-despacho';
-const DEST = { cli:'Ferretería La 30', city:'Manizales', tra:'Transportes El Roble', con:'Andrés Mejía · ABC123' };
+const TRA = 'Transportes El Roble', CON = 'Andrés Mejía · ABC123';
+// EDA-03, HZ-09, HZ-10: la guía se arma con los pedidos elegidos (datos ficticios)
+function guia() {
+  const sel = ORDERS.filter(o=>S.sel.has(o.id));
+  const city = S.group==='group' ? (S.destCity || sel[0].city) : sel[0].city;
+  const ped = S.group==='group' ? sel : sel.filter(o=>o.city===city);
+  const otras = S.group==='group' ? [] : [...new Set(sel.map(o=>o.city))].filter(c=>c!==city);
+  const d = ped.find(o=>o.city===city) || ped[0];          // destinatario: el pedido de la ciudad destino
+  return { city, ped, otras, cli:d.cli, dir:d.dir, tel:d.tel,
+           lista: ped.map(o=>`${o.id} (${o.cli})`).join(' · ') };
+}
 const app = document.getElementById('app'), live = document.getElementById('live');
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
@@ -113,15 +123,16 @@ function p1() {
 function generate() {
   if (!S.sel.size) return;
   if (cities().length > 1) return openDialog();
-  go('#p3');
+  S.group = 'single'; go('#p3');
 }
 function openDialog() {
   lastFocus = document.activeElement;
-  const c = cities(), byCity = c.map(ci => `${ci}: ${ORDERS.filter(o=>S.sel.has(o.id)&&o.city===ci).length}`).join(' · ');
+  const c = cities(), byCity = c.map(ci => { const os = ORDERS.filter(o=>S.sel.has(o.id)&&o.city===ci);
+    return `<li><b>${ci}</b> (${os.length}): ${os.map(o=>`${o.id} · ${o.cli}`).join(', ')}</li>`; }).join('');
   const sc = document.createElement('div'); sc.className = 'scrim'; sc.id = 'scrim';
   sc.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dt" aria-describedby="dd">
       <h2 id="dt">Estos pedidos van a ${c.length} ciudades</h2>
-      <p id="dd">${byCity}. Una guía debe tener un solo destino.</p>
+      <div id="dd"><p style="margin:0 0 4px">Una guía debe tener un solo destino.</p><ul style="margin:0;padding-left:20px">${byCity}</ul></div>
       <div class="acts">
         <button class="pri" id="split">Crear una guía por ciudad (recomendado)</button>
         <button id="group">Agrupar en una sola y elegir destino</button>
@@ -139,7 +150,7 @@ function openDialog() {
   });
   sc.querySelector('#split').onclick = ()=>{ S.group='split'; closeDialog(true); go('#p3'); };
   sc.querySelector('#group').onclick = ()=>{ sc.querySelector('#dest').hidden = false; sc.querySelector('#destsel').focus(); };
-  sc.querySelector('#groupok').onclick = ()=>{ S.group='group'; closeDialog(true); go('#p3'); };
+  sc.querySelector('#groupok').onclick = ()=>{ S.group='group'; S.destCity = sc.querySelector('#destsel').value; closeDialog(true); go('#p3'); };
   sc.querySelector('#back').onclick = ()=> closeDialog();
 }
 function closeDialog(silent) { const sc = document.getElementById('scrim'); if (sc) sc.remove(); if (!silent && lastFocus) lastFocus.focus(); }
@@ -148,11 +159,14 @@ function p3() {
   if (!S.hist.length) log('Pendiente');
   app.innerHTML = `
     <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}<p class="saved">✓ Guardado automáticamente · 09:02</p>
-    <p class="sub">${S.group==='split'?'Se crearon 2 guías: esta (Manizales) y TMS-2026-0413 (Salamina).':'Guía agrupada con destino elegido.'}</p>
+    ${(()=>{ const g = guia();
+      const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${413+i} (${c})`).join(', ')}.`
+                : S.group==='group' ? `Guía agrupada con destino ${g.city}.` : '';
+      return (msg ? `<p class="sub">${msg}</p>` : '') + `<p class="sub"><b>Pedidos en esta guía:</b> ${g.lista}</p>`; })()}
     <div class="card"><div class="grid">
-      <div><label for="dest">Destinatario</label><input id="dest" value="Ferretería La 30">
-           <label for="tel">Teléfono</label><input id="tel" value="606 884 2210"></div>
-      <div><label for="dir">Dirección</label><input id="dir" value="Cra 23 # 30-15, Manizales">
+      <div><label for="dest">Destinatario</label><input id="dest" value="${guia().cli}">
+           <label for="tel">Teléfono</label><input id="tel" value="${guia().tel}"></div>
+      <div><label for="dir">Dirección</label><input id="dir" value="${guia().dir}">
            <label for="tra">Transportadora</label><select id="tra"><option>Transportes El Roble</option></select></div>
       <div><label for="con">Conductor (obligatorio)</label><select id="con" aria-describedby="conerr" ${S.err?'aria-invalid="true"':''}>
            <option value="">Selecciona un conductor</option><option ${S.conductor?'selected':''}>Andrés Mejía · ABC123</option></select>
@@ -169,7 +183,7 @@ function p3() {
 function p4(state) {
   app.innerHTML = `
     <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--wr)">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved">✓ Guardado automáticamente · 09:10</p>
-    <p class="sub">Ferretería La 30 · Manizales · Transportes El Roble · Andrés Mejía</p>
+    <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
       <div><label for="caj">Cajas</label><input id="caj" type="number" min="0" value="${S.cajas}"></div>
       <div><label for="lio">Líos</label><input id="lio" type="number" min="0" value="${S.lios}"></div>
@@ -209,9 +223,10 @@ function openConfirm() {
       <h2 id="ct">¿Despachar la guía TMS-2026-0412?</h2>
       <p id="cd" style="margin:0">La guía pasará a <b>En tránsito</b>. Revisa que los datos sean los de esta guía.</p>
       <dl>
-        <dt>Destino</dt><dd>${DEST.cli} · ${DEST.city}</dd>
-        <dt>Transportadora</dt><dd>${DEST.tra}</dd>
-        <dt>Conductor</dt><dd>${DEST.con}</dd>
+        <dt>Destino</dt><dd>${guia().cli} · ${guia().city}</dd>
+        <dt>Pedidos</dt><dd>${guia().lista}</dd>
+        <dt>Transportadora</dt><dd>${TRA}</dd>
+        <dt>Conductor</dt><dd>${CON}</dd>
         <dt>Empaque</dt><dd>${S.cajas} cajas · ${S.lios} líos · flete $ ${S.flete}</dd>
       </dl>
       <div class="row"><button id="cancel">Cancelar (Esc)</button><button class="pri" id="confirm">Sí, despachar</button></div>
@@ -258,7 +273,7 @@ function p5() {
   app.innerHTML = `
     ${undoBanner()}
     <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}
-    <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">Ferretería La 30 · Cra 23 # 30-15, Manizales · Transportes El Roble · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete}</p></div>
+    <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${guia().cli} · ${guia().dir || guia().city} · ${TRA} · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete} · Pedidos: ${guia().lista}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
   document.getElementById('next').onclick = ()=>{ Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, dtries:0, undoable:false, undone:false, hist:[], err:false}); go('#p1'); };
@@ -268,11 +283,12 @@ function go(h) { if (location.hash === h) route(); else location.hash = h; }
 function route() {
   const h = location.hash || '#p1';
   if (h !== '#p5') S.undoable = false;          // salir de P5 cierra la posibilidad de deshacer
-  if (h === '#p3' && !S.sel.size) { ['PE07-0001201','PE14-0001203'].forEach(i=>S.sel.add(i)); }
+  if (h === '#p3' && !S.sel.size) { ['PE07-0001201','PE14-0001203'].forEach(i=>S.sel.add(i)); S.group = 'split'; }
+  if (['#p4','#p4e','#p4p','#p5'].includes(h) && !S.sel.size) { S.sel.add('PE07-0001201'); S.group = 'single'; }
   if (h === '#p4' && !S.conductor) { S.conductor = 'Andrés Mejía · ABC123'; if (!S.hist.length) log('Pendiente'); if (S.hist.length<2) log('En preparación'); }
   if (h === '#p5' && S.hist.length < 4) { S.conductor = S.conductor || 'x'; while (S.hist.length < 4) log(['Pendiente','En preparación','En plataforma','En tránsito'][S.hist.length]); }
   if (h === '#p2') { ['PE07-0001201','PE14-0001203','PE05-0001204'].forEach(i=>S.sel.add(i)); p1(); openDialog(); return; }
-  if (h === '#p3e') { S.sel.add('PE07-0001201'); S.conductor=''; S.err=true; p3(); return; }
+  if (h === '#p3e') { if (!S.sel.size) { S.sel.add('PE07-0001201'); S.group = 'single'; } S.conductor=''; S.err=true; p3(); return; }
   if (h === '#p4p') { S.conductor = S.conductor || 'Andrés Mejía · ABC123'; while (S.hist.length < 3) log(['Pendiente','En preparación','En plataforma'][S.hist.length]);
     p4('plat'); if (S.undone) { S.undone = false; showPlatMsg('✓ Se deshizo el despacho: la guía volvió a <b>En plataforma</b> con los mismos datos.'); say('Se deshizo el despacho'); } else app.focus(); return; }
   if (h === '#p4e') { S.conductor='x'; if (!S.hist.length) { log('Pendiente'); log('En preparación'); } S.tries=0; p4(); document.getElementById('mov').click(); return; }
