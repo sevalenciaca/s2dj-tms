@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TMS Suprokom · Crear y despachar guía (versión final)</title>
+<title>TMS Suprokom · Crear y despachar guía (versión C)</title>
 <style>
   :root { --tx:#1E2A3F; --tx2:#4A5568; --pri:#12306B; --acc:#B3202F; --ok:#1E6B3A; --okbg:#E8F5EC; --wr:#8A4B00; --wrbg:#FFF4E0; --er:#B42318; --erbg:#FDECEA; --fo:#1F5FD6; --ln:#CBD2DC; --bg:#F5F6F9; }
   * { box-sizing: border-box; }
@@ -43,6 +43,13 @@
   .dialog .acts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
   .pager { display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-top:8px; font-size:14px; }
   [hidden] { display:none !important; }
+  .dialog dl { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:12px 0 0; font-size:15px; }
+  .dialog dt { color:var(--tx2); }
+  .dialog dd { margin:0; font-weight:bold; }
+  .dialog .row { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+  .undo { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .undo .left { font-weight:normal; color:var(--tx); }
+  .ver { font-size:13px; opacity:.85; margin-left:8px; }
   #app:focus { outline:none; }
   .steps { display:flex; gap:8px; margin:14px 0 4px; max-width:820px; }
   .steps span { flex:1; padding:6px 10px; border-radius:6px; background:#fff; border:1px solid var(--ln); font-size:14px; color:var(--tx2); }
@@ -54,7 +61,7 @@
 </style>
 </head>
 <body>
-<header><b>TMS Suprokom</b><span>Marta R. · Bodega</span></header>
+<header><b>TMS Suprokom<span class="ver">· versión C</span></b><span>Marta R. · Bodega</span></header>
 <div class="wrap">
   <nav aria-label="Menú principal"><a href="#p1" aria-current="page">Pedidos pendientes</a><a href="#guias">Guías</a><a href="formatos.html">Otros formatos</a></nav>
   <main id="app" tabindex="-1"></main>
@@ -68,12 +75,17 @@ const ORDERS = [
   {id:'PE05-0001204', cli:'Tienda La Esquina', city:'Manizales', u:9, v:'$ 210.000'},
   {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300'},
 ];
-const S = { sel:new Set(), page:1, conductor:'', cajas:'6', lios:'2', flete:'30.000', tries:0, hist:[], group:'split' };
+const S = { sel:new Set(), page:1, conductor:'', cajas:'6', lios:'2', flete:'30.000', tries:0, hist:[], group:'split',
+  dtries:0, undoUntil:0, undoTimer:null };
+// HZ-01: plazo para deshacer el despacho y fallo simulado del despacho (solo con ?simular=fallo-despacho)
+const UNDO_SECONDS = 10;
+const FAIL_DISPATCH = new URLSearchParams(location.search).get('simular') === 'fallo-despacho';
+const DEST = { cli:'Ferretería La 30', city:'Manizales', tra:'Transportes El Roble', con:'Andrés Mejía · ABC123' };
 const app = document.getElementById('app'), live = document.getElementById('live');
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
 const stepper = n => `<div class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<span class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</span>`).join('')}</div>`;
-const log = (st) => { const t = ['09:02','09:10','09:18','09:21'][S.hist.length] || '09:30'; S.hist.push({t, st, by:'Marta R.'}); };
+const log = (st) => { const t = ['09:02','09:10','09:18','09:21','09:22','09:24','09:25'][S.hist.length] || '09:30'; S.hist.push({t, st, by:'Marta R.'}); };
 let lastFocus = null;
 
 function p1() {
@@ -168,7 +180,7 @@ function p4(state) {
       : '<button id="back">← Regresar a pendiente</button> <button class="pri" id="mov">Mover a plataforma</button>'}</p>`;
   ['caj','lio','fle'].forEach(k=> document.getElementById(k).oninput = e => { S[{caj:'cajas',lio:'lios',fle:'flete'}[k]] = e.target.value; });
   const m = document.getElementById('m');
-  if (state==='plat') { document.getElementById('desp').onclick = ()=>{ log('En tránsito'); go('#p5'); }; return; }
+  if (state==='plat') { document.getElementById('desp').onclick = openConfirm; return; }
   document.getElementById('back').onclick = ()=> go('#p3');
   const mov = document.getElementById('mov');
   mov.onclick = ()=>{
@@ -180,18 +192,91 @@ function p4(state) {
         m.innerHTML = '<div class="msg er">✕ No se pudo mover a plataforma: el servidor no respondió. Tus datos siguen guardados. <button id="retry">Reintentar</button></div>';
         document.getElementById('retry').onclick = ()=> mov.click();
         document.getElementById('retry').focus();
-      } else { log('En plataforma'); p4('plat'); document.getElementById('m').innerHTML = '<div class="msg ok">✓ La guía está en plataforma.</div>'; document.getElementById('desp').focus(); }
+      } else { log('En plataforma'); p4('plat'); showPlatMsg('✓ La guía está en plataforma. Revisa los datos antes de despachar.'); }
     }, 900);
   };
 }
+// Mensaje en P4 (En plataforma): el foco va al mensaje, nunca al botón «Despachar» (HZ-01)
+function showPlatMsg(html, cls='ok') {
+  const m = document.getElementById('m');
+  m.innerHTML = `<div class="msg ${cls}" tabindex="-1" id="platmsg">${html}</div>`;
+  document.getElementById('platmsg').focus();
+}
+function openConfirm() {
+  lastFocus = document.getElementById('desp');
+  const sc = document.createElement('div'); sc.className = 'scrim'; sc.id = 'scrim';
+  sc.innerHTML = `<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="ct" aria-describedby="cd">
+      <h2 id="ct">¿Despachar la guía TMS-2026-0412?</h2>
+      <p id="cd" style="margin:0">La guía pasará a <b>En tránsito</b>. Revisa que los datos sean los de esta guía.</p>
+      <dl>
+        <dt>Destino</dt><dd>${DEST.cli} · ${DEST.city}</dd>
+        <dt>Transportadora</dt><dd>${DEST.tra}</dd>
+        <dt>Conductor</dt><dd>${DEST.con}</dd>
+        <dt>Empaque</dt><dd>${S.cajas} cajas · ${S.lios} líos · flete $ ${S.flete}</dd>
+      </dl>
+      <div class="row"><button id="cancel">Cancelar (Esc)</button><button class="pri" id="confirm">Sí, despachar</button></div>
+    </div>`;
+  document.body.appendChild(sc);
+  const f = [sc.querySelector('#cancel'), sc.querySelector('#confirm')];
+  f[0].focus();                                   // el foco inicial es la opción segura
+  sc.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); cancelConfirm(); }
+    if (e.key === 'Tab') { const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i<=0) { e.preventDefault(); f[1].focus(); } else if (!e.shiftKey && i===1) { e.preventDefault(); f[0].focus(); } }
+  });
+  f[0].onclick = cancelConfirm;
+  f[1].onclick = ()=>{ closeDialog(true); dispatch(); };
+}
+function cancelConfirm() { closeDialog(); say('Despacho cancelado. La guía sigue En plataforma.'); }
+function dispatch() {
+  const b = document.getElementById('desp'), m = document.getElementById('m');
+  b.disabled = true; b.textContent = 'Despachando…'; m.innerHTML = ''; say('Despachando la guía');
+  setTimeout(()=>{
+    S.dtries++;
+    if (FAIL_DISPATCH && S.dtries === 1) {
+      b.disabled = false; b.textContent = 'Despachar · pasa a En tránsito';
+      m.innerHTML = '<div class="msg er">✕ No se pudo despachar: el servidor no respondió. La guía sigue <b>En plataforma</b> y tus datos están guardados. <button id="dretry">Reintentar despacho</button></div>';
+      document.getElementById('dretry').onclick = dispatch;
+      document.getElementById('dretry').focus();
+      return;
+    }
+    log('En tránsito'); S.undoUntil = Date.now() + UNDO_SECONDS*1000; go('#p5');
+  }, 900);
+}
+function undoDispatch() {
+  clearInterval(S.undoTimer); S.undoUntil = 0;
+  log('Despacho deshecho → En plataforma'); S.undone = true;
+  go('#p4p');
+}
+function undoBanner() {
+  const left = () => Math.max(0, Math.ceil((S.undoUntil - Date.now())/1000));
+  if (!S.undoUntil || left() === 0) return '<div class="msg ok" role="status">✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</div>';
+  return `<div class="msg ok undo" role="status"><span>✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</span>
+    <button id="undo">Deshacer despacho</button><span class="left" id="undoleft">Disponible ${left()} s</span></div>`;
+}
+function armUndo() {
+  const btn = document.getElementById('undo'); if (!btn) return;
+  btn.onclick = undoDispatch;
+  clearInterval(S.undoTimer);
+  S.undoTimer = setInterval(()=>{
+    const s = Math.max(0, Math.ceil((S.undoUntil - Date.now())/1000)), el = document.getElementById('undoleft');
+    if (!el) { clearInterval(S.undoTimer); return; }
+    if (s === 0) { clearInterval(S.undoTimer); S.undoUntil = 0;
+      const u = document.getElementById('undo'); const hadFocus = document.activeElement === u;
+      u.remove(); el.textContent = 'El plazo para deshacer terminó.'; say('El plazo para deshacer terminó');
+      if (hadFocus) document.getElementById('next').focus();
+    } else el.textContent = `Disponible ${s} s`;
+  }, 250);
+}
 function p5() {
   app.innerHTML = `
-    <div class="msg ok" role="status">✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</div>
+    ${undoBanner()}
     <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}
     <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">Ferretería La 30 · Cra 23 # 30-15, Manizales · Transportes El Roble · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
-  document.getElementById('next').onclick = ()=>{ Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, hist:[], err:false}); go('#p1'); };
+  document.getElementById('next').onclick = ()=>{ clearInterval(S.undoTimer); Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, dtries:0, undoUntil:0, undone:false, hist:[], err:false}); go('#p1'); };
+  armUndo();
 }
 function go(h) { if (location.hash === h) route(); else location.hash = h; }
 function route() {
@@ -201,6 +286,8 @@ function route() {
   if (h === '#p5' && S.hist.length < 4) { S.conductor = S.conductor || 'x'; while (S.hist.length < 4) log(['Pendiente','En preparación','En plataforma','En tránsito'][S.hist.length]); }
   if (h === '#p2') { ['PE07-0001201','PE14-0001203','PE05-0001204'].forEach(i=>S.sel.add(i)); p1(); openDialog(); return; }
   if (h === '#p3e') { S.sel.add('PE07-0001201'); S.conductor=''; S.err=true; p3(); return; }
+  if (h === '#p4p') { S.conductor = S.conductor || 'Andrés Mejía · ABC123'; while (S.hist.length < 3) log(['Pendiente','En preparación','En plataforma'][S.hist.length]);
+    p4('plat'); if (S.undone) { S.undone = false; showPlatMsg('✓ Se deshizo el despacho: la guía volvió a <b>En plataforma</b> con los mismos datos.'); say('Se deshizo el despacho'); } else app.focus(); return; }
   if (h === '#p4e') { S.conductor='x'; if (!S.hist.length) { log('Pendiente'); log('En preparación'); } S.tries=0; p4(); document.getElementById('mov').click(); return; }
   ({'#p1':p1,'#guias':p1,'#p3':p3,'#p4':()=>p4(),'#p5':p5}[h] || p1)();
   app.focus();
