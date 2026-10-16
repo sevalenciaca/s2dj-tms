@@ -38,7 +38,28 @@
   ol.hist { list-style:none; padding:0; margin:8px 0 0; }
   ol.hist li { border-left:3px solid var(--pri); padding:4px 0 4px 12px; margin-bottom:4px; }
   .scrim { position:fixed; inset:0; background:rgba(20,30,50,.45); display:flex; align-items:center; justify-content:center; }
-  .dialog { background:#fff; border-radius:10px; padding:24px; width:460px; }
+  .dialog { background:#fff; border-radius:10px; padding:24px; width:min(460px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; }
+  .tablewrap { overflow-x:auto; }
+  .msg { overflow-wrap:anywhere; }
+  /* EDA-10: casilla de 20 px y fila completa seleccionable */
+  tbody input[type=checkbox] { width:20px !important; height:20px; margin:0; vertical-align:middle; }
+  tbody tr[data-id] { cursor:pointer; }
+  @media (max-width: 760px) {
+    html { scroll-padding-bottom:160px; }   /* 2.4.11: el foco no queda bajo la barra fija */
+    header { padding:10px 16px; flex-wrap:wrap; gap:2px 12px; }
+    .wrap { flex-direction:column; min-height:0; }
+    nav { width:auto; display:flex; flex-wrap:wrap; border-right:0; border-bottom:1px solid var(--ln); padding:0; }
+    nav a { padding:12px 14px; }
+    nav a[aria-current] { border-left:0; border-bottom:4px solid var(--pri); }
+    main { padding:16px 16px 150px; }
+    h1 { font-size:22px; }
+    .bar { left:0; padding:10px 16px; flex-wrap:wrap; gap:8px; }
+    .grid { grid-template-columns:1fr; }
+    .steps { flex-wrap:wrap; } .steps li { flex:1 1 40%; }
+    .pager { flex-wrap:wrap; }
+    .dialog .row { flex-wrap:wrap; }
+    input, select { max-width:100%; }
+  }
   .dialog h2 { margin:0 0 8px; font-size:22px; }
   .dialog .acts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
   .pager { display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-top:8px; font-size:14px; }
@@ -51,10 +72,10 @@
   .undo .left { font-weight:normal; color:var(--tx); }
   .ver { font-size:13px; opacity:.85; margin-left:8px; }
   #app:focus { outline:none; }
-  .steps { display:flex; gap:8px; margin:14px 0 4px; max-width:820px; }
-  .steps span { flex:1; padding:6px 10px; border-radius:6px; background:#fff; border:1px solid var(--ln); font-size:14px; color:var(--tx2); }
-  .steps span.on { border:2px solid var(--pri); color:var(--pri); font-weight:bold; }
-  .steps span.done { color:var(--ok); }
+  .steps { display:flex; gap:8px; margin:14px 0 4px; max-width:820px; list-style:none; padding:0; }
+  .steps li { flex:1; padding:6px 10px; border-radius:6px; background:#fff; border:1px solid var(--ln); font-size:14px; color:var(--tx2); }
+  .steps li.on { border:2px solid var(--pri); color:var(--pri); font-weight:bold; }
+  .steps li.done { color:var(--ok); }
   .saved { font-size:14px; color:var(--ok); font-weight:bold; }
   button:hover:not(:disabled) { background:#E6EBF4; } button.pri:hover:not(:disabled) { background:#0B2150; }
   tbody tr:hover td { background:#F0F4FA; }
@@ -94,7 +115,7 @@ function guia() {
 const app = document.getElementById('app'), live = document.getElementById('live');
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
-const stepper = n => `<div class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<span class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</span>`).join('')}</div>`;
+const stepper = n => `<ol class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</li>`).join('')}</ol>`;
 // HZ-03: horas reales del reloj (sincronización, guardado e historial)
 const hhmm = () => new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
 S.syncAt = hhmm(); S.savedAt = hhmm(); S.q = '';
@@ -116,15 +137,16 @@ function p1() {
     <div id="syncmsg" role="status"></div>
     <label for="q">Buscar pedido o cliente</label><input id="q" placeholder="Ej.: PE07 o Ferretería" value="${S.q.replace(/"/g,'&quot;')}">
     <p class="sub" style="margin:4px 0 0">${S.q.trim() ? `${lista.length} pedido${lista.length===1?'':'s'} coincide${lista.length===1?'':'n'} con «${S.q.trim()}»` : `${ORDERS.length} pedidos pendientes`}</p>
-    <table><caption class="sub" style="text-align:left;padding:6px 0">Página ${S.page} de ${pages}</caption>
+    <div class="tablewrap" role="region" aria-label="Tabla de pedidos" tabindex="0"><table><caption class="sub" style="text-align:left;padding:6px 0">Página ${S.page} de ${pages}</caption>
       <thead><tr><th scope="col">Seleccionar</th><th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Ciudad</th><th scope="col">Unidades</th><th scope="col">Valor</th></tr></thead>
-      <tbody>${rows.length ? '' : `<tr><td colspan="6">No hay pedidos que coincidan con «${S.q.trim()}». Revisa lo escrito o borra la búsqueda.</td></tr>`}${rows.map(o=>`<tr><td><input type="checkbox" id="c-${o.id}" ${S.sel.has(o.id)?'checked':''} aria-label="Seleccionar pedido ${o.id} de ${o.cli}" style="width:auto"></td>
-        <td>${o.id}</td><td>${o.cli}</td><td>${o.city}</td><td>${o.u}</td><td>${o.v}</td></tr>`).join('')}</tbody></table>
+      <tbody>${rows.length ? '' : `<tr><td colspan="6">No hay pedidos que coincidan con «${S.q.trim()}». Revisa lo escrito o borra la búsqueda.</td></tr>`}${rows.map(o=>`<tr data-id="${o.id}"><td><input type="checkbox" id="c-${o.id}" ${S.sel.has(o.id)?'checked':''} aria-label="Seleccionar pedido ${o.id} de ${o.cli}" style="width:auto"></td>
+        <td>${o.id}</td><td>${o.cli}</td><td>${o.city}</td><td>${o.u}</td><td>${o.v}</td></tr>`).join('')}</tbody></table></div>
     <div class="pager"><button type="button" id="prev" ${S.page===1?'disabled':''}>‹ Anterior</button><span>Página ${S.page} de ${pages}</span><button type="button" id="next" ${S.page===pages?'disabled':''}>Siguiente ›</button></div>
     <div class="bar" role="region" aria-label="Resumen de la selección">
       <span><b>${S.sel.size} pedido${S.sel.size===1?'':'s'} seleccionado${S.sel.size===1?'':'s'}</b> (${onPage} en esta página)${cities().length>1?` · <span class="pill" style="color:var(--wr)">⚠ ${cities().length} ciudades</span>`:''}</span>
       <button class="pri" id="gen" ${S.sel.size?'':'disabled'}>Generar guía (G)</button>
     </div>`;
+  document.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.onclick = e => { if (e.target.tagName !== 'INPUT') document.getElementById('c-'+tr.dataset.id).click(); });
   rows.forEach(o=> document.getElementById('c-'+o.id).onchange = e => { e.target.checked ? S.sel.add(o.id) : S.sel.delete(o.id); p1(); document.getElementById('c-'+o.id).focus(); say(`${S.sel.size} pedidos seleccionados`); });
   document.getElementById('prev').onclick = ()=>{ S.page--; p1(); };
   document.getElementById('next').onclick = ()=>{ S.page++; p1(); };
@@ -198,7 +220,7 @@ function p3() {
 }
 function p4(state) {
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--wr)">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
     <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
       <div><label for="caj">Cajas</label><input id="caj" type="number" min="0" value="${S.cajas}"></div>
