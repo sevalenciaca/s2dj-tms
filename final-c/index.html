@@ -95,19 +95,30 @@ const app = document.getElementById('app'), live = document.getElementById('live
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
 const stepper = n => `<div class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<span class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</span>`).join('')}</div>`;
-const log = (st) => { const t = ['09:02','09:10','09:18','09:21','09:22','09:24','09:25'][S.hist.length] || '09:30'; S.hist.push({t, st, by:'Marta R.'}); };
+// HZ-03: horas reales del reloj (sincronización, guardado e historial)
+const hhmm = () => new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
+S.syncAt = hhmm(); S.savedAt = hhmm(); S.q = '';
+const touch = () => { S.savedAt = hhmm(); const e = document.querySelector('.saved[data-guardado]'); if (e) e.textContent = `✓ Guardado automáticamente · ${S.savedAt}`; };
+const log = (st) => { const t = hhmm(); S.savedAt = t; S.hist.push({t, st, by:'Marta R.'}); };
+// HZ-02: búsqueda por pedido, cliente o ciudad, sin distinguir tildes ni mayúsculas
+const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const filtrados = () => { const q = norm(S.q.trim()); return q ? ORDERS.filter(o => norm(`${o.id} ${o.cli} ${o.city}`).includes(q)) : ORDERS; };
 let lastFocus = null;
 
 function p1() {
-  const per = 3, pages = Math.ceil(ORDERS.length/per), rows = ORDERS.slice((S.page-1)*per, S.page*per);
+  const lista = filtrados(), per = 3, pages = Math.max(1, Math.ceil(lista.length/per));
+  if (S.page > pages) S.page = pages;
+  const rows = lista.slice((S.page-1)*per, S.page*per);
   const onPage = rows.filter(o=>S.sel.has(o.id)).length;
   app.innerHTML = `
     <h1>Pedidos pendientes</h1>
-    <p class="sub">Actualizado a las 10:00 desde el ERP · <button type="button" id="sync">Sincronizar</button></p>
-    <label for="q">Buscar pedido o cliente</label><input id="q" placeholder="Ej.: PE07 o Ferretería">
+    <p class="sub">Actualizado a las <span id="syncat">${S.syncAt}</span> desde el ERP · <button type="button" id="sync">Sincronizar</button></p>
+    <div id="syncmsg" role="status"></div>
+    <label for="q">Buscar pedido o cliente</label><input id="q" placeholder="Ej.: PE07 o Ferretería" value="${S.q.replace(/"/g,'&quot;')}">
+    <p class="sub" style="margin:4px 0 0">${S.q.trim() ? `${lista.length} pedido${lista.length===1?'':'s'} coincide${lista.length===1?'':'n'} con «${S.q.trim()}»` : `${ORDERS.length} pedidos pendientes`}</p>
     <table><caption class="sub" style="text-align:left;padding:6px 0">Página ${S.page} de ${pages}</caption>
       <thead><tr><th scope="col">Seleccionar</th><th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Ciudad</th><th scope="col">Unidades</th><th scope="col">Valor</th></tr></thead>
-      <tbody>${rows.map(o=>`<tr><td><input type="checkbox" id="c-${o.id}" ${S.sel.has(o.id)?'checked':''} aria-label="Seleccionar pedido ${o.id} de ${o.cli}" style="width:auto"></td>
+      <tbody>${rows.length ? '' : `<tr><td colspan="6">No hay pedidos que coincidan con «${S.q.trim()}». Revisa lo escrito o borra la búsqueda.</td></tr>`}${rows.map(o=>`<tr><td><input type="checkbox" id="c-${o.id}" ${S.sel.has(o.id)?'checked':''} aria-label="Seleccionar pedido ${o.id} de ${o.cli}" style="width:auto"></td>
         <td>${o.id}</td><td>${o.cli}</td><td>${o.city}</td><td>${o.u}</td><td>${o.v}</td></tr>`).join('')}</tbody></table>
     <div class="pager"><button type="button" id="prev" ${S.page===1?'disabled':''}>‹ Anterior</button><span>Página ${S.page} de ${pages}</span><button type="button" id="next" ${S.page===pages?'disabled':''}>Siguiente ›</button></div>
     <div class="bar" role="region" aria-label="Resumen de la selección">
@@ -117,7 +128,12 @@ function p1() {
   rows.forEach(o=> document.getElementById('c-'+o.id).onchange = e => { e.target.checked ? S.sel.add(o.id) : S.sel.delete(o.id); p1(); document.getElementById('c-'+o.id).focus(); say(`${S.sel.size} pedidos seleccionados`); });
   document.getElementById('prev').onclick = ()=>{ S.page--; p1(); };
   document.getElementById('next').onclick = ()=>{ S.page++; p1(); };
-  document.getElementById('sync').onclick = ()=> say('Pedidos actualizados');
+  document.getElementById('sync').onclick = ()=>{
+    const b = document.getElementById('sync'); b.disabled = true; b.textContent = 'Sincronizando…';
+    setTimeout(()=>{ S.syncAt = hhmm(); p1(); document.getElementById('syncmsg').innerHTML = `<p class="saved" style="margin:4px 0">✓ Pedidos actualizados · ${S.syncAt}</p>`; document.getElementById('sync').focus(); }, 700);
+  };
+  const q = document.getElementById('q');
+  q.oninput = ()=>{ S.q = q.value; S.page = 1; const pos = q.selectionStart; p1(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); say(`${filtrados().length} pedidos encontrados`); };
   document.getElementById('gen').onclick = generate;
 }
 function generate() {
@@ -158,7 +174,7 @@ function closeDialog(silent) { const sc = document.getElementById('scrim'); if (
 function p3() {
   if (!S.hist.length) log('Pendiente');
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}<p class="saved">✓ Guardado automáticamente · 09:02</p>
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
     ${(()=>{ const g = guia();
       const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${413+i} (${c})`).join(', ')}.`
                 : S.group==='group' ? `Guía agrupada con destino ${g.city}.` : '';
@@ -182,7 +198,7 @@ function p3() {
 }
 function p4(state) {
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--wr)">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved">✓ Guardado automáticamente · 09:10</p>
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--wr)">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
     <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
       <div><label for="caj">Cajas</label><input id="caj" type="number" min="0" value="${S.cajas}"></div>
@@ -192,7 +208,7 @@ function p4(state) {
     <p>${state==='plat'
       ? '<button class="pri" id="desp">Despachar · pasa a En tránsito</button>'
       : '<button id="back">← Regresar a pendiente</button> <button class="pri" id="mov">Mover a plataforma</button>'}</p>`;
-  ['caj','lio','fle'].forEach(k=> document.getElementById(k).oninput = e => { S[{caj:'cajas',lio:'lios',fle:'flete'}[k]] = e.target.value; });
+  ['caj','lio','fle'].forEach(k=> document.getElementById(k).oninput = e => { S[{caj:'cajas',lio:'lios',fle:'flete'}[k]] = e.target.value; touch(); });
   const m = document.getElementById('m');
   if (state==='plat') { document.getElementById('desp').onclick = openConfirm; return; }
   document.getElementById('back').onclick = ()=> go('#p3');
