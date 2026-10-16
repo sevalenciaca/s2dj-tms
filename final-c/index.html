@@ -70,6 +70,11 @@
   .dialog .row { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
   .undo { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .undo .left { font-weight:normal; color:var(--tx); }
+  .ayuda { max-width:820px; margin:8px 0; background:#fff; border:1px solid var(--ln); border-radius:8px; padding:8px 14px; }
+  .ayuda summary { cursor:pointer; font-weight:bold; color:var(--pri); padding:4px 0; }
+  .ayuda dl { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:8px 0 4px; font-size:15px; }
+  .ayuda dt { font-weight:bold; } .ayuda dd { margin:0; }
+  @media (max-width: 760px) { .ayuda dl { grid-template-columns:1fr; } }
   .ver { font-size:13px; opacity:.85; margin-left:8px; }
   #app:focus { outline:none; }
   .steps { display:flex; gap:8px; margin:14px 0 4px; max-width:820px; list-style:none; padding:0; }
@@ -125,6 +130,14 @@ const log = (st) => { const t = hhmm(); S.savedAt = t; S.hist.push({t, st, by:'M
 const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const filtrados = () => { const q = norm(S.q.trim()); return q ? ORDERS.filter(o => norm(`${o.id} ${o.cli} ${o.city}`).includes(q)) : ORDERS; };
 let lastFocus = null;
+// HZ-08 (D-38): ayuda contextual mínima, texto aprobado por el equipo
+const ayuda = () => `<details class="ayuda"><summary>Ayuda: estados, líos y qué hacer si algo falla</summary>
+  <dl>
+    <dt>Lío</dt><dd>Bulto que no va en caja (por ejemplo, tubos o varillas amarrados); se cuenta aparte de las cajas.</dd>
+    <dt>Estados</dt><dd>Pendiente (guía creada, faltan datos) · En preparación (se está empacando) · En plataforma (lista en el muelle para cargar) · En tránsito (salió con el conductor).</dd>
+    <dt>Si el servidor no responde</dt><dd>Pulsa «Reintentar»; tus datos siguen guardados. Si vuelve a fallar, avisa a coordinación de despacho.</dd>
+    <dt>Deshacer</dt><dd>Puedes deshacer el despacho mientras sigas en la pantalla de la guía despachada.</dd>
+  </dl></details>`;
 
 function p1() {
   const lista = filtrados(), per = 3, pages = Math.max(1, Math.ceil(lista.length/per));
@@ -196,7 +209,7 @@ function closeDialog(silent) { const sc = document.getElementById('scrim'); if (
 function p3() {
   if (!S.hist.length) log('Pendiente');
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}${ayuda()}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
     ${(()=>{ const g = guia();
       const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${413+i} (${c})`).join(', ')}.`
                 : S.group==='group' ? `Guía agrupada con destino ${g.city}.` : '';
@@ -220,7 +233,7 @@ function p3() {
 }
 function p4(state) {
   app.innerHTML = `
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}${ayuda()}<p class="saved" data-guardado>✓ Guardado automáticamente · ${S.savedAt}</p>
     <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
       <div><label for="caj">Cajas</label><input id="caj" type="number" min="0" value="${S.cajas}"></div>
@@ -310,7 +323,7 @@ function armUndo() { const btn = document.getElementById('undo'); if (btn) btn.o
 function p5() {
   app.innerHTML = `
     ${undoBanner()}
-    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}
+    <h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}${ayuda()}
     <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${guia().cli} · ${guia().dir || guia().city} · ${TRA} · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete} · Pedidos: ${guia().lista}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
