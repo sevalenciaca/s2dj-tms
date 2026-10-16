@@ -347,8 +347,9 @@ function route() {
   app.focus();
 }
 document.addEventListener('keydown', e => {
-  const t = e.target.tagName;
-  if (e.key.toLowerCase()==='g' && !['INPUT','SELECT','TEXTAREA'].includes(t) && !document.getElementById('scrim') && (location.hash||'#p1')==='#p1') { e.preventDefault(); generate(); }
+  // HZ-12 (D-48): G también funciona con el foco en una casilla; se ignora solo en campos de texto y listas
+  const el = e.target, escribe = (el.tagName === 'INPUT' && el.type !== 'checkbox') || ['SELECT','TEXTAREA'].includes(el.tagName);
+  if (e.key.toLowerCase()==='g' && !escribe && !document.getElementById('scrim') && (location.hash||'#p1')==='#p1') { e.preventDefault(); generate(); }
 });
 window.addEventListener('hashchange', route);
 route();
