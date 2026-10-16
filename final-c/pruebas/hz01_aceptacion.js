@@ -5,7 +5,8 @@
 const { chromium } = require('playwright-core');
 const path = require('path');
 const BASE = process.argv[2] || 'http://127.0.0.1:8765/';
-const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const MAC = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = process.env.CHROME || (require('fs').existsSync(MAC) ? MAC : undefined);   // en CI: Chromium de playwright-core
 const SHOTS = path.join(__dirname, 'capturas');
 
 const h1 = p => p.textContent('h1').then(t => t.trim());
@@ -102,7 +103,7 @@ async function plazo(b, url) {                   // CA-07 · sin límite de tiem
 }
 
 (async () => {
-  const b = await chromium.launch({ executablePath: CHROME });
+  const b = await chromium.launch(CHROME ? { executablePath: CHROME } : {});
   const todos = [];
   for (const [version, ruta] of [['A', 'final/'], ['C', 'final-c/']]) {
     const p = await b.newPage({ viewport: { width: 1440, height: 900 } });

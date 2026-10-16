@@ -1,4 +1,4 @@
-Prueba de aceptación HZ-01 · 2026-10-16T05:21:22.588Z · base http://127.0.0.1:8765/
+Prueba de aceptación HZ-01 · 2026-10-16T06:19:28.233Z · base http://127.0.0.1:8765/
 A CA-06  FALLA  foco=#desp · tras Enter: «Guía TMS-2026-0412 ✓ En tránsito»
 A CA-01  FALLA  sin diálogo · estado «Guía TMS-2026-0412 ✓ En tránsito»
 A CA-02  FALLA  no aplica: no existe la confirmación
@@ -11,7 +11,7 @@ C CA-01  PASA   diálogo con resumen · estado «Guía TMS-2026-0412 En platafor
 C CA-02  PASA   foco inicial=#cancel · tras Esc: «Guía TMS-2026-0412 En plataforma», foco=#desp
 C CA-03  PASA   espera «Despachando…» · «Guía TMS-2026-0412 ✓ En tránsito» · Puedes deshacerlo mientras sigas en esta pantalla.
 C CA-04  PASA   «Guía TMS-2026-0412 En plataforma» · cajas/líos/flete=6/2/30.000 · foco=#platmsg
-C CA-04b PASA   historial: 00:21 · Pendiente · Marta R. | 00:21 · En preparación · Marta R. | 00:21 · En plataforma · Marta R. | 00:21 · En tránsito · Marta R. | 00:21 · Despacho deshecho → En plataforma · Marta R. | 00:21 · En tránsito · Marta R.
+C CA-04b PASA   historial: 01:19 · Pendiente · Marta R. | 01:19 · En preparación · Marta R. | 01:19 · En plataforma · Marta R. | 01:19 · En tránsito · Marta R. | 01:19 · Despacho deshecho → En plataforma · Marta R. | 01:19 · En tránsito · Marta R.
 C CA-05  PASA   error visible · estado durante el error «Guía TMS-2026-0412 En plataforma» · foco=#dretry · tras reintentar «Guía TMS-2026-0412 ✓ En tránsito»
 C CA-07  PASA   Deshacer disponible tras 2 min=true · tras pasar a la siguiente guía y volver=false
 
