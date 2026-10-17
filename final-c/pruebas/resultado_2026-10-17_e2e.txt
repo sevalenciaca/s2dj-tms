@@ -1,0 +1,34 @@
+PASA  [1440px] axe sin infracciones serias en P01
+PASA  [1440px] llega con Tab a la casilla de PE07-0001201
+PASA  [1440px] G con el foco en la casilla abre la guía (HZ-12)
+PASA  [1440px] destinatario = cliente elegido (EDA-03)
+PASA  [1440px] axe sin infracciones serias en P03
+PASA  [1440px] «Lista para empacar» pasa a En preparación
+PASA  [1440px] axe sin infracciones serias en P04
+PASA  [1440px] el error del servidor lleva el foco a «Reintentar»
+PASA  [1440px] En plataforma, con el foco fuera de «Despachar»
+PASA  [1440px] axe sin infracciones serias en P04b
+PASA  [1440px] la confirmación abre con el foco en «Cancelar»
+PASA  [1440px] axe sin infracciones serias en confirmación
+PASA  [1440px] confirmar despacha: En tránsito
+PASA  [1440px] axe sin infracciones serias en P05
+PASA  [1440px] «Deshacer despacho» con teclado devuelve la guía a En plataforma
+PASA  [1440px] sin desplazamiento horizontal
+PASA  [390px] axe sin infracciones serias en P01
+PASA  [390px] llega con Tab a la casilla de PE07-0001201
+PASA  [390px] G con el foco en la casilla abre la guía (HZ-12)
+PASA  [390px] destinatario = cliente elegido (EDA-03)
+PASA  [390px] axe sin infracciones serias en P03
+PASA  [390px] «Lista para empacar» pasa a En preparación
+PASA  [390px] axe sin infracciones serias en P04
+PASA  [390px] el error del servidor lleva el foco a «Reintentar»
+PASA  [390px] En plataforma, con el foco fuera de «Despachar»
+PASA  [390px] axe sin infracciones serias en P04b
+PASA  [390px] la confirmación abre con el foco en «Cancelar»
+PASA  [390px] axe sin infracciones serias en confirmación
+PASA  [390px] confirmar despacha: En tránsito
+PASA  [390px] axe sin infracciones serias en P05
+PASA  [390px] «Deshacer despacho» con teclado devuelve la guía a En plataforma
+PASA  [390px] sin desplazamiento horizontal
+
+Todas las comprobaciones pasan

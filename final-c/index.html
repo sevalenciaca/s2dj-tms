@@ -110,11 +110,34 @@ const ORDERS = [
   {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300', dir:'Av. Santander # 70-12, Manizales', tel:'606 886 9090'},
 ];
 const S = { sel:new Set(), page:1, conductor:'', cajas:'6', lios:'2', flete:'30.000', tries:0, hist:[], group:'split',
-  dtries:0, undoable:false };
+  dtries:0, undoable:false, tra:'Transportes El Roble', num:'TMS-2026-0412', guias:[] };
+// Iteración 2 (R3, 17-oct): conductores por transportadora. U01 comentó que en la operación real a veces se elige
+// el conductor equivocado; dos «Andrés» en transportadoras distintas hacen visible el riesgo (datos ficticios).
+const TRANS = {
+  'Transportes El Roble': ['Andrés Mejía · ABC123', 'Luis Ospina · DEF456'],
+  'Rápido Caldas': ['Andrés Mesa · GHI789', 'Carlos Ruiz · JKL012'],
+  'Transcafé': ['Diana López · MNO345'],
+};
 // HZ-01 (D-34): «Deshacer despacho» sin límite de tiempo mientras la guía siga en P5 (WCAG 2.2.1);
 // se cierra al pasar a la siguiente guía. Fallo simulado del despacho solo con ?simular=fallo-despacho.
 const FAIL_DISPATCH = new URLSearchParams(location.search).get('simular') === 'fallo-despacho';
-const TRA = 'Transportes El Roble', CON = 'Andrés Mejía · ABC123';
+const CON = 'Andrés Mejía · ABC123';                     // conductor por defecto de los estados de demostración
+const nombreCon = () => (S.conductor || CON).split(' · ')[0];
+// Iteración 2 (HZ-04, HZ-05): la guía en curso y las guías anteriores se conservan al recargar la página.
+const CLAVE = 'tms-c-guias-v2';
+const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ ...S, sel:[...S.sel] })); } catch (e) {} };
+const DEMO = ['#p2', '#p3e', '#p4e'];                    // estados de demostración: arrancan limpios
+(function cargar() {
+  try {
+    if (DEMO.includes(location.hash)) { localStorage.removeItem(CLAVE); return; }
+    const d = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+    if (d) Object.assign(S, d, { sel:new Set(d.sel || []), undoable:false });
+  } catch (e) {}
+})();
+const estadoDe = h => { const st = (h[h.length-1] || {}).st || 'Pendiente'; return st.startsWith('Despacho deshecho') ? 'En plataforma' : st; };
+// Título de cada pantalla de la guía (U02: «cuando se llena la guía no tiene título, solo el número»)
+const titulo = (paso, pill, color) => `<h1>Guía de despacho ${S.num} <span class="pill" style="color:${color}">${pill}</span></h1>
+  <p class="sub" style="margin:2px 0 0">${paso} · ${guia().cli} → ${guia().city}</p>`;
 // EDA-03, HZ-09, HZ-10: la guía se arma con los pedidos elegidos (datos ficticios)
 function guia() {
   const sel = ORDERS.filter(o=>S.sel.has(o.id));
@@ -129,13 +152,13 @@ const app = document.getElementById('app'), live = document.getElementById('live
 const say = t => { live.textContent = ''; setTimeout(()=> live.textContent = t, 30); };
 const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
 // HCI Lab · patrón Navegación: ubicación actual visible y regreso reconocible
-const migas = () => `<nav class="migas" aria-label="Ruta"><a href="#p1">Pedidos pendientes</a> <span aria-hidden="true">›</span> <span aria-current="page">Guía TMS-2026-0412</span></nav>`;
+const migas = () => `<nav class="migas" aria-label="Ruta"><a href="#p1">Pedidos pendientes</a> <span aria-hidden="true">›</span> <a href="#guias">Guías</a> <span aria-hidden="true">›</span> <span aria-current="page">Guía ${S.num}</span></nav>`;
 const stepper = n => `<ol class="steps" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</li>`).join('')}</ol>`;
 // HZ-03: horas reales del reloj (sincronización, guardado e historial)
 const hhmm = () => new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
 S.syncAt = hhmm(); S.savedAt = hhmm(); S.q = '';
-const touch = () => { S.savedAt = hhmm(); const e = document.querySelector('.saved[data-guardado]'); if (e) e.textContent = `✓ Guardado en esta sesión · ${S.savedAt}`; };
-const log = (st) => { const t = hhmm(); S.savedAt = t; S.hist.push({t, st, by:'Marta R.'}); };
+const touch = () => { S.savedAt = hhmm(); guardar(); const e = document.querySelector('.saved[data-guardado]'); if (e) e.textContent = `✓ Guardado · se conserva al recargar · ${S.savedAt}`; };
+const log = (st) => { const t = hhmm(); S.savedAt = t; S.hist.push({t, st, by:'Marta R.'}); guardar(); };
 // HZ-02: búsqueda por pedido, cliente o ciudad, sin distinguir tildes ni mayúsculas
 const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const filtrados = () => { const q = norm(S.q.trim()); return q ? ORDERS.filter(o => norm(`${o.id} ${o.cli} ${o.city}`).includes(q)) : ORDERS; };
@@ -146,7 +169,8 @@ const ayuda = () => `<details class="ayuda"><summary>Ayuda: estados, líos y qu�
     <dt>Lío</dt><dd>Bulto que no va en caja (por ejemplo, tubos o varillas amarrados); se cuenta aparte de las cajas.</dd>
     <dt>Estados</dt><dd>Pendiente (guía creada, faltan datos) · En preparación (se está empacando) · En plataforma (lista en el muelle para cargar) · En tránsito (salió con el conductor).</dd>
     <dt>Si el servidor no responde</dt><dd>Pulsa «Reintentar»; tus datos siguen guardados. Si vuelve a fallar, avisa a coordinación de despacho.</dd>
-    <dt>Deshacer</dt><dd>Puedes deshacer el despacho mientras sigas en la pantalla de la guía despachada.</dd>
+    <dt>Deshacer</dt><dd>Puedes deshacer el despacho en la pantalla de la guía despachada o, después, desde «Guías».</dd>
+    <dt>Atajos</dt><dd>G genera la guía · E la deja lista para empacar · M la mueve a plataforma · D abre la confirmación de despacho (nunca despacha sin confirmar).</dd>
   </dl></details>`;
 
 function p1() {
@@ -220,22 +244,27 @@ function closeDialog(silent) { const sc = document.getElementById('scrim'); if (
 function p3() {
   if (!S.hist.length) log('Pendiente');
   app.innerHTML = `
-    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--tx2)">Pendiente</span></h1>${stepper(2)}${ayuda()}<p class="saved" data-guardado>✓ Guardado en esta sesión · ${S.savedAt}</p>
+    ${migas()}${titulo('Paso 2 de 4: datos de entrega', 'Pendiente', 'var(--tx2)')}${stepper(2)}${ayuda()}<p class="saved" data-guardado>✓ Guardado · se conserva al recargar · ${S.savedAt}</p>
     ${(()=>{ const g = guia();
-      const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${413+i} (${c})`).join(', ')}.`
+      const n = +S.num.slice(-4);
+      const msg = g.otras.length ? `Se crearon ${g.otras.length+1} guías: esta (${g.city}) y ${g.otras.map((c,i)=>`TMS-2026-0${n+1+i} (${c})`).join(', ')}.`
                 : S.group==='group' ? `Guía agrupada con destino ${g.city}.` : '';
       return (msg ? `<p class="sub">${msg}</p>` : '') + `<p class="sub"><b>Pedidos en esta guía:</b> ${g.lista}</p>`; })()}
     <div class="card"><div class="grid">
       <div><label for="dest">Destinatario</label><input id="dest" value="${guia().cli}">
            <label for="tel">Teléfono</label><input id="tel" value="${guia().tel}"></div>
       <div><label for="dir">Dirección</label><input id="dir" value="${guia().dir}">
-           <label for="tra">Transportadora</label><select id="tra"><option>Transportes El Roble</option></select></div>
-      <div><label for="con">Conductor (obligatorio)</label><select id="con" aria-describedby="conerr" ${S.err?'aria-invalid="true"':''}>
-           <option value="">Selecciona un conductor</option><option ${S.conductor?'selected':''}>Andrés Mejía · ABC123</option></select>
+           <label for="tra">Transportadora</label><select id="tra">${Object.keys(TRANS).map(t=>`<option ${t===S.tra?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div><label for="con">Conductor (obligatorio)</label><select id="con" aria-describedby="conayuda conerr" ${S.err?'aria-invalid="true"':''}>
+           <option value="">Selecciona un conductor</option>${TRANS[S.tra].map(c=>`<option ${c===S.conductor?'selected':''}>${c}</option>`).join('')}</select>
+           <div id="conayuda" class="sub" style="margin-top:2px">Solo aparecen los conductores de ${S.tra}.</div>
            <div id="conerr" class="fielderr" ${S.err?'':'hidden'}>✕ Falta el conductor. Selecciónalo para continuar.</div></div>
     </div></div>
-    <p><button id="back">← Volver a pedidos</button> <button class="pri" id="ready">Lista para empacar</button></p>`;
-  document.getElementById('con').onchange = e => { S.conductor = e.target.value; S.err = false; document.getElementById('conerr').hidden = true; e.target.removeAttribute('aria-invalid'); };
+    <p><button id="back">← Volver a pedidos</button> <button class="pri" id="ready" aria-keyshortcuts="E">Lista para empacar (E)</button></p>`;
+  document.getElementById('con').onchange = e => { S.conductor = e.target.value; S.err = false; document.getElementById('conerr').hidden = true; e.target.removeAttribute('aria-invalid'); guardar(); };
+  document.getElementById('tra').onchange = e => {        // al cambiar de transportadora, el conductor se vuelve a elegir
+    S.tra = e.target.value; if (!TRANS[S.tra].includes(S.conductor)) S.conductor = '';
+    guardar(); p3(); document.getElementById('tra').focus(); say(`Conductores de ${S.tra}: ${TRANS[S.tra].length}`); };
   document.getElementById('back').onclick = ()=> go('#p1');
   document.getElementById('ready').onclick = ()=>{
     if (!S.conductor) { S.err = true; p3(); document.getElementById('con').focus(); say('Falta el conductor'); return; }
@@ -262,16 +291,16 @@ function validarEmpaque() {
 }
 function p4(state) {
   app.innerHTML = `
-    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:${state==='plat'?'var(--pri)':'var(--wr)'}">${state==='plat'?'En plataforma':'En preparación'}</span></h1>${stepper(state==='plat'?4:3)}${ayuda()}<p class="saved" data-guardado>✓ Guardado en esta sesión · ${S.savedAt}</p>
-    <p class="sub">${guia().cli} · ${guia().city} · ${TRA} · ${CON.split(' · ')[0]} · Pedidos: ${guia().lista}</p>
+    ${migas()}${titulo(state==='plat'?'Paso 4 de 4: despacho':'Paso 3 de 4: empaque y plataforma', state==='plat'?'En plataforma':'En preparación', state==='plat'?'var(--pri)':'var(--wr)')}${stepper(state==='plat'?4:3)}${ayuda()}<p class="saved" data-guardado>✓ Guardado · se conserva al recargar · ${S.savedAt}</p>
+    <p class="sub">${S.tra} · ${nombreCon()} · Pedidos: ${guia().lista}</p>
     <div class="card"><h2 style="margin:0;font-size:20px">Registrar empaque</h2><div class="grid">
       <div><label for="caj">Cajas</label><input id="caj" inputmode="numeric" value="${S.cajas}" aria-describedby="caj-err"><div id="caj-err" class="fielderr" hidden></div></div>
       <div><label for="lio">Líos</label><input id="lio" inputmode="numeric" value="${S.lios}" aria-describedby="lio-err"><div id="lio-err" class="fielderr" hidden></div></div>
       <div><label for="fle">Flete ($)</label><input id="fle" inputmode="numeric" value="${S.flete}" aria-describedby="fle-ayuda fle-err"><div id="fle-ayuda" class="sub" style="margin-top:2px">Solo números; los puntos de miles son opcionales (30.000).</div><div id="fle-err" class="fielderr" hidden></div></div></div></div>
     <div id="m" role="alert"></div>
     <p>${state==='plat'
-      ? '<button class="pri" id="desp">Despachar · pasa a En tránsito</button>'
-      : '<button id="back">← Regresar a pendiente</button> <button class="pri" id="mov">Mover a plataforma</button>'}</p>`;
+      ? '<button class="pri" id="desp" aria-keyshortcuts="D">Despachar · pasa a En tránsito (D)</button>'
+      : '<button id="back">← Regresar a pendiente</button> <button class="pri" id="mov" aria-keyshortcuts="M">Mover a plataforma (M)</button>'}</p>`;
   ['caj','lio','fle'].forEach(k=> document.getElementById(k).oninput = e => { S[{caj:'cajas',lio:'lios',fle:'flete'}[k]] = e.target.value; touch(); });
   const m = document.getElementById('m');
   if (state==='plat') { document.getElementById('desp').onclick = openConfirm; return; }
@@ -283,7 +312,7 @@ function p4(state) {
     setTimeout(()=>{
       S.tries++;
       if (S.tries === 1) {
-        mov.disabled = false; mov.textContent = 'Mover a plataforma';
+        mov.disabled = false; mov.textContent = 'Mover a plataforma (M)';
         m.innerHTML = '<div class="msg er">✕ No se pudo mover a plataforma: el servidor no respondió. Tus datos siguen guardados. <button id="retry">Reintentar</button></div>';
         document.getElementById('retry').onclick = ()=> mov.click();
         document.getElementById('retry').focus();
@@ -301,13 +330,13 @@ function openConfirm() {
   lastFocus = document.getElementById('desp');
   const sc = document.createElement('div'); sc.className = 'scrim'; sc.id = 'scrim';
   sc.innerHTML = `<div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="ct" aria-describedby="cd">
-      <h2 id="ct">¿Despachar la guía TMS-2026-0412?</h2>
+      <h2 id="ct">¿Despachar la guía ${S.num}?</h2>
       <p id="cd" style="margin:0">La guía pasará a <b>En tránsito</b>. Revisa que los datos sean los de esta guía.</p>
       <dl>
         <dt>Destino</dt><dd>${guia().cli} · ${guia().city}</dd>
         <dt>Pedidos</dt><dd>${guia().lista}</dd>
-        <dt>Transportadora</dt><dd>${TRA}</dd>
-        <dt>Conductor</dt><dd>${CON}</dd>
+        <dt>Transportadora</dt><dd>${S.tra}</dd>
+        <dt>Conductor</dt><dd>${S.conductor || CON}</dd>
         <dt>Empaque</dt><dd>${S.cajas} cajas · ${S.lios} líos · flete $ ${S.flete}</dd>
       </dl>
       <div class="row"><button id="cancel">Cancelar (Esc)</button><button class="pri" id="confirm">Sí, despachar</button></div>
@@ -330,7 +359,7 @@ function dispatch() {
   setTimeout(()=>{
     S.dtries++;
     if (FAIL_DISPATCH && S.dtries === 1) {
-      b.disabled = false; b.textContent = 'Despachar · pasa a En tránsito';
+      b.disabled = false; b.textContent = 'Despachar · pasa a En tránsito (D)';
       m.innerHTML = '<div class="msg er">✕ No se pudo despachar: el servidor no respondió. La guía sigue <b>En plataforma</b> y tus datos están guardados. <button id="dretry">Reintentar despacho</button></div>';
       document.getElementById('dretry').onclick = dispatch;
       document.getElementById('dretry').focus();
@@ -341,47 +370,96 @@ function dispatch() {
 }
 function undoDispatch() {
   S.undoable = false;
+  if (estadoDe(S.hist) !== 'En tránsito') return;
   log('Despacho deshecho → En plataforma'); S.undone = true;
   go('#p4p');
 }
 function undoBanner() {
-  if (!S.undoable) return '<div class="msg ok" role="status">✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</div>';
-  return `<div class="msg ok undo" role="status"><span>✓ Guía TMS-2026-0412 despachada: ahora está En tránsito.</span>
-    <button id="undo">Deshacer despacho</button><span class="left" id="undoleft">Puedes deshacerlo mientras sigas en esta pantalla.</span></div>`;
+  if (!S.undoable) return `<div class="msg ok" role="status">✓ Guía ${S.num} despachada: ahora está En tránsito. Si hace falta, puedes deshacerlo desde <a href="#guias">Guías</a>.</div>`;
+  return `<div class="msg ok undo" role="status"><span>✓ Guía ${S.num} despachada: ahora está En tránsito.</span>
+    <button id="undo">Deshacer despacho</button><span class="left" id="undoleft">Puedes deshacerlo mientras sigas en esta pantalla o, después, desde «Guías».</span></div>`;
 }
 function armUndo() { const btn = document.getElementById('undo'); if (btn) btn.onclick = undoDispatch; }
 function p5() {
   app.innerHTML = `
     ${undoBanner()}
-    ${migas()}<h1>Guía TMS-2026-0412 <span class="pill" style="color:var(--ok)">✓ En tránsito</span></h1>${stepper(5)}${ayuda()}
-    <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${guia().cli} · ${guia().dir || guia().city} · ${TRA} · Andrés Mejía (ABC123) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete} · Pedidos: ${guia().lista}</p></div>
+    ${migas()}${titulo('Despachada', '✓ En tránsito', 'var(--ok)')}${stepper(5)}${ayuda()}
+    <div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${guia().cli} · ${guia().dir || guia().city} · ${S.tra} · ${(S.conductor || CON).replace(' · ', ' (')}) · ${S.cajas} cajas, ${S.lios} líos · Flete $ ${S.flete} · Pedidos: ${guia().lista}</p></div>
     <div class="card"><b>Historial</b><ol class="hist">${S.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
     <p><button class="pri" id="next">Ver siguiente guía</button></p>`;
-  document.getElementById('next').onclick = ()=>{ Object.assign(S, {sel:new Set(), page:1, conductor:'', tries:0, dtries:0, undoable:false, undone:false, hist:[], err:false}); go('#p1'); };
+  document.getElementById('next').onclick = ()=>{ archivar(); nuevaGuia(); go('#p1'); };
   armUndo();
+}
+// ---- Iteración 2: vista «Guías» (HZ-04), retomar una guía interrumpida (HZ-05) y deshacer desde la lista (S-06)
+const SNAP = ['sel','group','destCity','conductor','tra','cajas','lios','flete','hist','num','tries','dtries'];
+function foto() { const f = {}; SNAP.forEach(k => f[k] = k === 'sel' ? [...S.sel] : JSON.parse(JSON.stringify(S[k] ?? null))); return f; }
+function archivar() { if (S.sel.size && S.hist.length) S.guias = S.guias.filter(g => g.num !== S.num).concat([foto()]); }
+function nuevaGuia() {
+  const usados = [S.num, ...S.guias.map(g => g.num)].map(n => +n.slice(-4));
+  const sig = Math.max(...usados) + 2;                  // deja libre el número de la guía de la otra ciudad
+  Object.assign(S, {sel:new Set(), page:1, conductor:'', tra:'Transportes El Roble', tries:0, dtries:0, undoable:false, undone:false, hist:[], err:false, num:'TMS-2026-0' + sig});
+  guardar();
+}
+function abrir(num) {                                   // la guía elegida pasa a ser la guía en curso
+  const g = S.guias.find(x => x.num === num); if (!g) return;
+  archivar();
+  S.guias = S.guias.filter(x => x.num !== num);
+  Object.assign(S, g, { sel:new Set(g.sel), page:1, undoable:false, undone:false, err:false });
+  guardar();
+}
+const DESTINO = {'Pendiente':'#p3', 'En preparación':'#p4', 'En plataforma':'#p4p', 'En tránsito':'#p5'};
+function guias() {
+  const todas = [...S.guias, ...(S.sel.size && S.hist.length ? [foto()] : [])].sort((a,b) => a.num.localeCompare(b.num));
+  const fila = g => { const st = estadoDe(g.hist), sel = new Set(g.sel), ped = ORDERS.filter(o => sel.has(o.id));
+    const ult = g.hist[g.hist.length-1] || {};
+    const accion = st === 'En tránsito'
+      ? `<button data-deshacer="${g.num}" aria-label="Deshacer despacho de ${g.num}">Deshacer despacho</button>`
+      : `<button class="pri" data-retomar="${g.num}" aria-label="Retomar ${g.num}">Retomar</button>`;
+    return `<tr><td>${g.num}${g.num === S.num ? ' <span class="sub">(en curso)</span>' : ''}</td><td>${ped.map(o=>o.cli).join(', ') || '—'}</td>
+      <td>${ped.map(o=>o.id).join(', ')}</td><td><span class="pill">${st}</span></td><td>${ult.t || '—'}</td><td>${accion}</td></tr>`; };
+  app.innerHTML = `
+    <h1>Guías</h1>
+    <p class="sub">Guías creadas en este equipo. Se conservan al recargar la página; puedes retomar una guía interrumpida o deshacer un despacho.</p>
+    <div id="gmsg" role="status"></div>
+    ${todas.length ? `<div class="tablewrap" role="region" aria-label="Tabla de guías" tabindex="0"><table>
+      <thead><tr><th scope="col">Guía</th><th scope="col">Destinatario</th><th scope="col">Pedidos</th><th scope="col">Estado</th><th scope="col">Última actualización</th><th scope="col">Acción</th></tr></thead>
+      <tbody>${todas.map(fila).join('')}</tbody></table></div>`
+      : '<p class="card">Todavía no hay guías. Créalas desde <a href="#p1">Pedidos pendientes</a>.</p>'}`;
+  app.querySelectorAll('[data-retomar]').forEach(b => b.onclick = () => {
+    const num = b.dataset.retomar; if (num !== S.num) abrir(num);
+    go(DESTINO[estadoDe(S.hist)] || '#p3'); });
+  app.querySelectorAll('[data-deshacer]').forEach(b => b.onclick = () => {
+    const num = b.dataset.deshacer; if (num !== S.num) abrir(num);
+    undoDispatch(); });
 }
 function go(h) { if (location.hash === h) route(); else location.hash = h; }
 function route() {
   const h = location.hash || '#p1';
   if (h !== '#p5') S.undoable = false;          // salir de P5 cierra la posibilidad de deshacer
-  const enPedidos = ['#p1','#p2','#guias'].includes(h);   // dentro de una guía, el menú no marca «Pedidos pendientes»
-  document.querySelectorAll('nav[aria-label="Menú principal"] a').forEach(a => { if (enPedidos && a.getAttribute('href') === '#p1') a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  const actual = ['#p1','#p2'].includes(h) ? '#p1' : h === '#guias' ? '#guias' : '';   // dentro de una guía no se marca ninguno
+  document.querySelectorAll('nav[aria-label="Menú principal"] a').forEach(a => { if (a.getAttribute('href') === actual) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (h === '#guias') { guias(); app.focus(); return; }
   if (h === '#p3' && !S.sel.size) { ['PE07-0001201','PE14-0001203'].forEach(i=>S.sel.add(i)); S.group = 'split'; }
   if (['#p4','#p4e','#p4p','#p5'].includes(h) && !S.sel.size) { S.sel.add('PE07-0001201'); S.group = 'single'; }
   if (h === '#p4' && !S.conductor) { S.conductor = 'Andrés Mejía · ABC123'; if (!S.hist.length) log('Pendiente'); if (S.hist.length<2) log('En preparación'); }
-  if (h === '#p5' && S.hist.length < 4) { S.conductor = S.conductor || 'x'; while (S.hist.length < 4) log(['Pendiente','En preparación','En plataforma','En tránsito'][S.hist.length]); }
+  if (h === '#p5' && S.hist.length < 4) { S.conductor = S.conductor || CON; while (S.hist.length < 4) log(['Pendiente','En preparación','En plataforma','En tránsito'][S.hist.length]); }
   if (h === '#p2') { ['PE07-0001201','PE14-0001203','PE05-0001204'].forEach(i=>S.sel.add(i)); p1(); openDialog(); return; }
   if (h === '#p3e') { if (!S.sel.size) { S.sel.add('PE07-0001201'); S.group = 'single'; } S.conductor=''; S.err=true; p3(); return; }
   if (h === '#p4p') { S.conductor = S.conductor || 'Andrés Mejía · ABC123'; while (S.hist.length < 3) log(['Pendiente','En preparación','En plataforma'][S.hist.length]);
     p4('plat'); if (S.undone) { S.undone = false; showPlatMsg('✓ Se deshizo el despacho: la guía volvió a <b>En plataforma</b> con los mismos datos.'); say('Se deshizo el despacho'); } else app.focus(); return; }
-  if (h === '#p4e') { S.conductor='x'; if (!S.hist.length) { log('Pendiente'); log('En preparación'); } S.tries=0; p4(); document.getElementById('mov').click(); return; }
-  ({'#p1':p1,'#guias':p1,'#p3':p3,'#p4':()=>p4(),'#p5':p5}[h] || p1)();
+  if (h === '#p4e') { S.conductor = CON; if (!S.hist.length) { log('Pendiente'); log('En preparación'); } S.tries=0; p4(); document.getElementById('mov').click(); return; }
+  ({'#p1':p1,'#p3':p3,'#p4':()=>p4(estadoDe(S.hist)==='En plataforma' ? 'plat' : undefined),'#p5':p5}[h] || p1)();   // recargar en plataforma conserva el estado (HZ-05)
   app.focus();
 }
 document.addEventListener('keydown', e => {
   // HZ-12 (D-48): G también funciona con el foco en una casilla; se ignora solo en campos de texto y listas
   const el = e.target, escribe = (el.tagName === 'INPUT' && el.type !== 'checkbox') || ['SELECT','TEXTAREA'].includes(el.tagName);
-  if (e.key.toLowerCase()==='g' && !escribe && !document.getElementById('scrim') && (location.hash||'#p1')==='#p1') { e.preventDefault(); generate(); }
+  if (escribe || document.getElementById('scrim') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k==='g' && (location.hash||'#p1')==='#p1') { e.preventDefault(); generate(); return; }
+  // M-11 (iteración 2): E, M y D activan el botón visible; D solo abre la confirmación (HZ-01 se mantiene)
+  const boton = {e:'ready', m:'mov', d:'desp'}[k] && document.getElementById({e:'ready', m:'mov', d:'desp'}[k]);
+  if (boton && !boton.disabled) { e.preventDefault(); boton.click(); }
 });
 window.addEventListener('hashchange', route);
 route();
