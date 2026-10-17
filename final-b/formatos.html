@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Versión B · Confirmación y resultado del despacho en cuatro formatos</title>
+<style>
+  :root { --tx:#1E2A3F; --tx2:#4A5568; --pri:#12306B; --ok:#1E6B3A; --okbg:#E8F5EC; --wr:#8A4B00; --wrbg:#FFF4E0; --ln:#CBD2DC; --bg:#F5F6F9; --fo:#1F5FD6; }
+  * { box-sizing:border-box; } body { margin:0; font:16px/1.45 Arial, Helvetica, sans-serif; color:var(--tx); background:var(--bg); }
+  header { background:var(--pri); color:#fff; padding:12px 24px; } main { max-width:1180px; margin:0 auto; padding:20px; }
+  h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:19px; margin:0 0 6px; } .sub { color:var(--tx2); font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; margin-top:16px; align-items:start; }
+  section { background:#fff; border:1px solid var(--ln); border-radius:10px; padding:16px; }
+  .frame { border:2px solid var(--tx); border-radius:12px; padding:12px; margin-top:10px; background:#fff; }
+  .ok { background:var(--okbg); color:var(--ok); border:1px solid var(--ok); border-radius:6px; padding:8px 10px; font-weight:bold; }
+  button { font:inherit; font-weight:bold; border-radius:6px; border:1px solid var(--pri); background:#fff; color:var(--pri); padding:10px 16px; min-height:44px; cursor:pointer; }
+  button.pri { background:var(--pri); color:#fff; } :focus-visible { outline:3px solid var(--fo); outline-offset:2px; }
+  ol { margin:6px 0; padding-left:18px; font-size:14px; } .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .tab li { list-style:none; border-left:3px solid var(--pri); padding:6px 10px; margin:0 0 6px -18px; background:#F5F6F9; }
+  .watch { width:210px; height:210px; border-radius:50%; border:8px solid var(--tx); margin:10px auto 0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:26px; background:#0F1724; color:#fff; }
+  .watch b { font-size:15px; } .watch .st { color:#7BE0A1; font-weight:bold; margin:2px 0 8px; } .watch button { min-height:44px; padding:6px 20px; }
+  .phone { max-width:340px; margin-inline:auto; border-radius:22px; }
+</style>
+</head>
+<body>
+<header><b>TMS Suprokom · versión B (alternativa generada con IA)</b></header>
+<main>
+  <h1>La confirmación y el resultado del despacho, en cuatro formatos</h1>
+  <p class="sub">Pantalla clave elegida: el despacho de la guía TMS-2026-0412. Son diseños estáticos de apoyo (datos ficticios); solo el computador es navegable en <a href="./">la versión B</a>. El reloj no ejecuta la tarea: solo avisa.</p>
+  <div class="grid">
+    <section aria-labelledby="pc"><h2 id="pc">Computador · coordinación de despacho</h2><p class="sub">Confirmación con resumen y historial completo.</p>
+      <div class="frame"><b>¿Despachar la guía TMS-2026-0412?</b><p class="sub" style="margin:2px 0">Ferretería La 30 · Manizales · Andrés Mejía · 6 cajas, 2 líos</p>
+        <div class="row"><button>Cancelar</button><button class="pri">Despachar</button></div>
+        <p class="ok" style="margin-top:12px">✓ Guía TMS-2026-0412 despachada: En tránsito. <button style="margin-left:6px">Deshacer (10 s)</button></p>
+        <ol><li>09:10 · Pendiente · Marta R.</li><li>09:14 · En preparación · Marta R.</li><li>09:18 · En plataforma · Marta R.</li><li>09:21 · En tránsito · Marta R.</li></ol></div></section>
+    <section aria-labelledby="tb"><h2 id="tb">Tableta · piso de bodega</h2><p class="sub">Lista de guías del día y detalle. Botones de 44 px o más.</p>
+      <div class="frame"><b>Guías de hoy</b><ol class="tab"><li><b>TMS-2026-0412</b> · Manizales · <span class="ok" style="padding:1px 8px">En tránsito</span></li><li><b>TMS-2026-0413</b> · Salamina · En plataforma <br><span class="sub">Falta: despachar</span></li></ol>
+        <button class="pri" style="width:100%">Despachar TMS-2026-0413</button></div></section>
+    <section aria-labelledby="ce"><h2 id="ce">Celular · coordinador en movimiento</h2><p class="sub">Estado, último cambio y «Deshacer» mientras esté vigente.</p>
+      <div class="frame phone"><b>TMS-2026-0412</b><p class="ok" style="margin:6px 0">✓ En tránsito</p><p class="sub" style="margin:0">Último cambio: 09:21 · Marta R.</p>
+        <button style="width:100%;margin-top:10px">Deshacer (8 s)</button></div></section>
+    <section aria-labelledby="rl"><h2 id="rl">Reloj · aviso</h2><p class="sub">Solo avisa; no ejecuta la tarea.</p>
+      <div class="watch" role="group" aria-label="Aviso del reloj"><b>TMS-2026-0412</b><span class="st">En tránsito</span><button id="visto" aria-live="polite">Visto</button></div></section>
+  </div>
+  <p class="sub" style="margin-top:18px">Declarado: estos cuatro diseños no se probaron en dispositivos reales ni con personas. Ver <code>REGISTRO_B.md</code>.</p>
+  <p><a href="./">← Volver al prototipo B</a></p>
+</main>
+<script>document.getElementById('visto').onclick = e => { e.target.textContent = '✓ Visto'; e.target.disabled = true; };</script>
+</body>
+</html>

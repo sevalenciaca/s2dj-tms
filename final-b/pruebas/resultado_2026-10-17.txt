@@ -1,0 +1,12 @@
+Aceptación de la versión B · 2026-10-17T07:48:22.433Z · base http://127.0.0.1:8765/final-b/
+PASA  B-01  foco al llegar=#platmsg · Enter no despacha: «Guía TMS-2026-0412 En plataforma» · confirmación repite guía, destino, conductor y cajas · foco inicial=#cancel · Esc deja En plataforma
+PASA  B-02  error en el primer intento · estado «Guía TMS-2026-0412 En plataforma» · foco=#dretry · tras reintentar «Guía TMS-2026-0412 ✓ En tránsito»
+PASA  B-03  «Deshacer» devuelve a En plataforma=true · visible tras despachar=true · vence a los 10 s: «El plazo para deshacer terminó: la guía sigue En tránsito.»
+PASA  B-04  «Actualizado a las» pasa de 09:00 a 09:02 al sincronizar, con aviso «✓ Pedidos actualizados · 09:02»
+PASA  B-05  el menú resalta la sección actual: dentro de la guía «Guías» · lista «Guías» · pedidos «Pedidos pendientes»
+PASA  B-06  diálogo con la lista de pedidos por ciudad · «Se crearon 2 guías» solo con dos ciudades (true) · Guías: 2 guías, 2 con «Falta: conductor»
+PASA  B-07  destinatario «Agro El Cafetal» (el cliente elegido) · «Agro El Cafetal → Manizales · Pedidos incluidos: PE31-0001202 (Agro El Cafetal)» · sin «Se crearon» con una sola ciudad (true)
+PASA  B-08  axe sin infracciones serias y sin desplazamiento horizontal en 7 estados a 1440 y 390 px
+PASA  B-09  formatos presentes: Computador · coordinación de despacho | Tableta · piso de bodega | Celular · coordinador en movimiento | Reloj · aviso
+
+Resumen: 9/9 pasan

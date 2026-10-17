@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TMS Suprokom · Crear y despachar guía (versión B, alternativa generada con IA)</title>
+<style>
+  :root { --tx:#1E2A3F; --tx2:#4A5568; --pri:#12306B; --ok:#1E6B3A; --okbg:#E8F5EC; --wr:#8A4B00; --wrbg:#FFF4E0; --er:#B42318; --erbg:#FDECEA; --fo:#1F5FD6; --ln:#CBD2DC; --bg:#F5F6F9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.5 Arial, Helvetica, sans-serif; color:var(--tx); background:var(--bg); }
+  header { background:var(--pri); color:#fff; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  header .tag { font-size:13px; background:#fff; color:var(--pri); border-radius:999px; padding:2px 10px; margin-left:8px; font-weight:bold; }
+  .wrap { display:flex; min-height:calc(100vh - 52px); }
+  nav.menu { width:210px; background:#fff; border-right:1px solid var(--ln); padding:12px 0; }
+  nav.menu a { display:block; padding:11px 20px; color:var(--tx); text-decoration:none; }
+  nav.menu a[aria-current] { background:#E6EBF4; font-weight:bold; border-left:4px solid var(--pri); padding-left:16px; }
+  main { flex:1; padding:24px 32px 110px; min-width:0; }
+  main:focus { outline:none; }
+  h1 { font-size:27px; margin:0 0 4px; } h2 { font-size:20px; margin:0 0 8px; }
+  .sub { color:var(--tx2); font-size:14px; }
+  label { display:block; font-size:14px; font-weight:bold; margin:12px 0 4px; }
+  input, select { font:inherit; padding:9px 10px; border:1px solid #6B7280; border-radius:6px; width:100%; max-width:360px; background:#fff; color:var(--tx); min-height:40px; }
+  button { font:inherit; padding:10px 16px; border-radius:6px; border:1px solid var(--pri); background:#fff; color:var(--pri); cursor:pointer; font-weight:bold; min-height:40px; }
+  button.pri { background:var(--pri); color:#fff; } button:disabled { opacity:.55; cursor:not-allowed; }
+  :focus-visible { outline:3px solid var(--fo); outline-offset:2px; }
+  table { border-collapse:collapse; width:100%; background:#fff; margin-top:14px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--ln); font-size:15px; } th { background:#E6EBF4; font-size:14px; }
+  tbody tr[data-id], tbody tr[data-g] { cursor:pointer; } tbody tr:hover td { background:#F0F4FA; }
+  tbody input[type=checkbox] { width:22px; height:22px; min-height:0; margin:0; }
+  .tw { overflow-x:auto; }
+  .bar { position:fixed; left:210px; right:0; bottom:0; background:#fff; border-top:2px solid var(--pri); padding:12px 32px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:14px; font-weight:bold; border:1px solid currentColor; }
+  .msg { border-radius:6px; padding:10px 14px; margin:12px 0; font-weight:bold; overflow-wrap:anywhere; }
+  .msg.er { color:var(--er); background:var(--erbg); border:1px solid var(--er); } .msg.ok { color:var(--ok); background:var(--okbg); border:1px solid var(--ok); } .msg.wr { color:var(--wr); background:var(--wrbg); border:1px solid var(--wr); }
+  .fe { color:var(--er); font-size:14px; font-weight:bold; margin-top:4px; }
+  .card { background:#fff; border:1px solid var(--ln); border-radius:8px; padding:16px 20px; margin-top:14px; max-width:820px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:0 28px; }
+  ol.hist { list-style:none; padding:0; margin:8px 0 0; } ol.hist li { border-left:3px solid var(--pri); padding:3px 0 3px 12px; margin-bottom:4px; }
+  .scrim { position:fixed; inset:0; background:rgba(20,30,50,.5); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .dlg { background:#fff; border-radius:10px; padding:24px; width:min(480px,100%); max-height:100%; overflow:auto; }
+  .dlg dl { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:12px 0 0; } .dlg dt { color:var(--tx2); } .dlg dd { margin:0; font-weight:bold; }
+  .row { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap; }
+  .undo { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .prog { display:flex; gap:8px; list-style:none; padding:0; margin:12px 0; max-width:820px; } .prog li { flex:1; padding:6px 10px; border:1px solid var(--ln); border-radius:6px; background:#fff; font-size:14px; color:var(--tx2); }
+  .prog li.on { border:2px solid var(--pri); color:var(--pri); font-weight:bold; } .prog li.done { color:var(--ok); }
+  .saved { color:var(--ok); font-size:14px; font-weight:bold; }
+  @media (max-width:760px) {
+    .wrap { flex-direction:column; } nav.menu { width:auto; display:flex; border-right:0; border-bottom:1px solid var(--ln); padding:0; } nav.menu a { padding:12px 14px; }
+    nav.menu a[aria-current] { border-left:0; border-bottom:4px solid var(--pri); padding-left:14px; }
+    main { padding:16px 16px 160px; } .bar { left:0; padding:10px 16px; } .grid { grid-template-columns:1fr; } input, select { max-width:100%; min-height:44px; } button { min-height:44px; }
+    .prog { flex-wrap:wrap; } .prog li { flex:1 1 40%; } .bar button.pri { flex:1 1 100%; } html { scroll-padding-bottom:170px; }
+  }
+</style>
+</head>
+<body>
+<header><b>TMS Suprokom<span class="tag">versión B · alternativa generada con IA</span></b><span>Marta R. · Bodega</span></header>
+<div class="wrap">
+  <nav class="menu" aria-label="Menú principal"><a href="#p1" id="m-p1">Pedidos pendientes</a><a href="#guias" id="m-guias">Guías</a><a href="formatos.html">Otros formatos</a></nav>
+  <main id="app" tabindex="-1"></main>
+</div>
+<div id="live" aria-live="polite" role="status" style="position:absolute;left:-9999px"></div>
+<script>
+// Versión B · alternativa generada con IA (Claude) a partir del prompt del Taller 6. Datos ficticios, sin backend.
+const ORDERS = [
+  {id:'PE07-0001201', cli:'Ferretería La 30', city:'Manizales', u:18, v:'$ 441.200', dir:'Cra 23 # 30-15, Manizales', tel:'606 884 2210'},
+  {id:'PE31-0001202', cli:'Agro El Cafetal', city:'Manizales', u:12, v:'$ 719.100', dir:'Cl 48 # 22-10, Manizales', tel:'606 885 1020'},
+  {id:'PE14-0001203', cli:'Distribuidora Andina', city:'Salamina', u:16, v:'$ 506.200', dir:'Cra 6 # 4-21, Salamina', tel:'606 859 3310'},
+  {id:'PE05-0001204', cli:'Tienda La Esquina', city:'Manizales', u:9, v:'$ 210.000', dir:'Cl 65 # 23-05, Manizales', tel:'606 887 4455'},
+  {id:'PE07-0001205', cli:'Surtiaseo del Norte', city:'Manizales', u:6, v:'$ 154.300', dir:'Av. Santander # 70-12, Manizales', tel:'606 886 9090'},
+];
+const TRA = 'Transportes El Roble', CON = 'Andrés Mejía · ABC123', ESTADOS = ['Pendiente','En preparación','En plataforma','En tránsito'];
+const UNDO_S = 10;                                   // el prompt pide «Deshacer visible durante unos segundos»
+const S = { sel:new Set(), page:1, q:'', syncAt:null, guias:[], cur:null, n:412, aviso:'', undoUntil:0, timer:null };
+const app = document.getElementById('app'), live = document.getElementById('live');
+const say = t => { live.textContent = ''; setTimeout(() => live.textContent = t, 30); };
+const hhmm = () => new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', hour12:false});
+const norm = t => t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+S.syncAt = hhmm();
+const cities = () => [...new Set(ORDERS.filter(o=>S.sel.has(o.id)).map(o=>o.city))];
+const lista = g => g.ped.map(o=>`${o.id} (${o.cli})`).join(' · ');
+const log = (g, st) => { g.hist.push({t:hhmm(), st, by:'Marta R.'}); g.saved = hhmm(); };
+const num = () => 'TMS-2026-0' + (S.n++);
+let lastFocus = null;
+
+// ---- creación de guías: los datos salen de los pedidos elegidos (EDA-03) y el aviso depende de lo creado (HZ-09)
+function crear(modo, destino) {
+  const sel = ORDERS.filter(o=>S.sel.has(o.id)), nuevas = [];
+  const mk = (ped, city) => { const d = ped.find(o=>o.city===city) || ped[0];
+    return {num:num(), city, ped, cli:d.cli, dir:d.dir, tel:d.tel, tra:TRA, conductor:'', err:false, cajas:'6', lios:'2', flete:'30.000', estado:'Pendiente', hist:[], dtries:0, saved:hhmm()}; };
+  if (modo === 'group') nuevas.push(mk(sel, destino));
+  else [...new Set(sel.map(o=>o.city))].forEach(c => nuevas.push(mk(sel.filter(o=>o.city===c), c)));
+  nuevas.forEach(g => log(g, 'Pendiente'));
+  S.guias.push(...nuevas); S.cur = nuevas[0];
+  S.aviso = nuevas.length > 1 ? `Se crearon ${nuevas.length} guías: ${nuevas.map(g=>`${g.num} (${g.city})`).join(', ')}.` : '';
+  location.hash = '#g';
+}
+
+// ---- P1 pedidos
+function p1() {
+  const q = norm(S.q.trim()), todos = q ? ORDERS.filter(o=>norm(`${o.id} ${o.cli} ${o.city}`).includes(q)) : ORDERS;
+  const per = 3, pages = Math.max(1, Math.ceil(todos.length/per)); if (S.page > pages) S.page = pages;
+  const rows = todos.slice((S.page-1)*per, S.page*per), enPag = rows.filter(o=>S.sel.has(o.id)).length;
+  app.innerHTML = `<h1>Pedidos pendientes</h1>
+    <p class="sub">Actualizado a las <span id="syncat">${S.syncAt}</span> desde el ERP · <button type="button" id="sync">Sincronizar</button></p><div id="syncmsg" role="status"></div>
+    <label for="q">Buscar pedido o cliente</label><input id="q" value="${S.q.replace(/"/g,'&quot;')}" placeholder="Ej.: PE07 o Ferretería">
+    <p class="sub" style="margin:4px 0 0">${q ? `${todos.length} pedido${todos.length===1?'':'s'} coincide${todos.length===1?'':'n'}` : `${ORDERS.length} pedidos pendientes`}</p>
+    <div class="tw" role="region" aria-label="Tabla de pedidos" tabindex="0"><table><caption class="sub" style="text-align:left">Página ${S.page} de ${pages}</caption>
+      <thead><tr><th scope="col">Seleccionar</th><th scope="col">Pedido</th><th scope="col">Cliente</th><th scope="col">Ciudad</th><th scope="col">Unidades</th><th scope="col">Valor</th></tr></thead>
+      <tbody>${rows.length ? '' : `<tr><td colspan="6">No hay pedidos que coincidan.</td></tr>`}${rows.map(o=>`<tr data-id="${o.id}"><td><input type="checkbox" id="c-${o.id}" ${S.sel.has(o.id)?'checked':''} aria-label="Seleccionar pedido ${o.id} de ${o.cli}"></td><td>${o.id}</td><td>${o.cli}</td><td>${o.city}</td><td>${o.u}</td><td>${o.v}</td></tr>`).join('')}</tbody></table></div>
+    <p style="display:flex;gap:8px;justify-content:flex-end;align-items:center"><button id="prev" ${S.page===1?'disabled':''}>‹ Anterior</button><span class="sub">Página ${S.page} de ${pages}</span><button id="next" ${S.page===pages?'disabled':''}>Siguiente ›</button></p>
+    <div class="bar" role="region" aria-label="Resumen de la selección"><span><b>${S.sel.size} pedido${S.sel.size===1?'':'s'} seleccionado${S.sel.size===1?'':'s'}</b> (${enPag} en esta página)${cities().length>1?` · <span class="pill" style="color:var(--wr)">⚠ ${cities().length} ciudades</span>`:''}</span><button class="pri" id="gen" ${S.sel.size?'':'disabled'}>Generar guía (G)</button></div>`;
+  app.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.onclick = e => { if (e.target.tagName !== 'INPUT') document.getElementById('c-'+tr.dataset.id).click(); });
+  rows.forEach(o => document.getElementById('c-'+o.id).onchange = e => { e.target.checked ? S.sel.add(o.id) : S.sel.delete(o.id); p1(); document.getElementById('c-'+o.id).focus(); say(`${S.sel.size} pedidos seleccionados`); });
+  document.getElementById('prev').onclick = () => { S.page--; p1(); }; document.getElementById('next').onclick = () => { S.page++; p1(); };
+  document.getElementById('sync').onclick = () => { const b = document.getElementById('sync'); b.disabled = true; b.textContent = 'Sincronizando…';
+    setTimeout(() => { S.syncAt = hhmm(); p1(); document.getElementById('syncmsg').innerHTML = `<p class="saved" style="margin:4px 0">✓ Pedidos actualizados · ${S.syncAt}</p>`; document.getElementById('sync').focus(); }, 700); };
+  const qi = document.getElementById('q'); qi.oninput = () => { S.q = qi.value; S.page = 1; const pos = qi.selectionStart; p1(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos,pos); };
+  document.getElementById('gen').onclick = generar;
+}
+function generar() { if (!S.sel.size) return; if (cities().length > 1) return dialogoCiudades(); crear('single'); }
+function trap(sc, f, onEsc) { sc.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); onEsc(); }
+  if (e.key === 'Tab') { const l = f(), i = l.indexOf(document.activeElement); if (e.shiftKey && i<=0) { e.preventDefault(); l[l.length-1].focus(); } else if (!e.shiftKey && i===l.length-1) { e.preventDefault(); l[0].focus(); } } }); }
+function cerrar(silencio) { const sc = document.getElementById('scrim'); if (sc) sc.remove(); if (!silencio && lastFocus) lastFocus.focus(); }
+function dialogoCiudades() {   // P2
+  lastFocus = document.activeElement; const c = cities();
+  const porCiudad = c.map(ci => `<li><b>${ci}</b> (${ORDERS.filter(o=>S.sel.has(o.id)&&o.city===ci).length}): ${ORDERS.filter(o=>S.sel.has(o.id)&&o.city===ci).map(o=>`${o.id} · ${o.cli}`).join(', ')}</li>`).join('');
+  const sc = document.createElement('div'); sc.className = 'scrim'; sc.id = 'scrim';
+  sc.innerHTML = `<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dt"><h2 id="dt">Estos pedidos van a ${c.length} ciudades</h2><p style="margin:0 0 4px">Una guía debe tener un solo destino.</p><ul style="margin:0;padding-left:20px">${porCiudad}</ul>
+    <div class="row" style="flex-direction:column;align-items:stretch"><button class="pri" id="split">Crear una guía por ciudad (recomendado)</button>
+    <p class="sub" style="margin:0">Cada ciudad sale con su propia guía, conductor y ruta.</p><button id="group">Agrupar en una sola y elegir destino</button>
+    <div id="dest" hidden><label for="ds">Destino de la guía</label><select id="ds">${c.map(x=>`<option>${x}</option>`).join('')}</select><button class="pri" id="gok" style="margin-top:8px">Crear guía con este destino</button></div>
+    <button id="back">Volver a la selección (Esc)</button></div></div>`;
+  document.body.appendChild(sc);
+  const f = () => [...sc.querySelectorAll('button:not([hidden]),select')].filter(e=>e.offsetParent); f()[0].focus(); trap(sc, f, () => cerrar());
+  sc.querySelector('#split').onclick = () => { cerrar(true); crear('split'); };
+  sc.querySelector('#group').onclick = () => { sc.querySelector('#dest').hidden = false; sc.querySelector('#ds').focus(); };
+  sc.querySelector('#gok').onclick = () => { const d = sc.querySelector('#ds').value; cerrar(true); crear('group', d); };
+  sc.querySelector('#back').onclick = () => cerrar();
+}
+
+// ---- guía (P3 a P5)
+const pasos = g => `<ol class="prog" aria-label="Progreso de la guía">${['1. Pedidos','2. Datos de entrega','3. Empaque y plataforma','4. Despacho'].map((t,i)=>{ const n = {Pendiente:2,'En preparación':3,'En plataforma':4,'En tránsito':5}[g.estado]; return `<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?'✓ ':''}${t}</li>`; }).join('')}</ol>`;
+const cab = g => `<nav aria-label="Ruta" class="sub"><a href="#p1">Pedidos pendientes</a> › <a href="#guias">Guías</a> › <span aria-current="page">${g.num}</span></nav>
+  <h1>Guía ${g.num} <span class="pill" style="color:${g.estado==='En tránsito'?'var(--ok)':g.estado==='En plataforma'?'var(--pri)':'var(--wr)'}">${g.estado==='En tránsito'?'✓ ':''}${g.estado}</span></h1>
+  <p class="sub" style="margin:2px 0 0">${g.cli} → ${g.city} · Pedidos incluidos: ${lista(g)}</p>${pasos(g)}<p class="saved" data-saved>✓ Guardado automáticamente · ${g.saved}</p>`;
+function guia() {
+  const g = S.cur; if (!g) { location.hash = '#guias'; return; }
+  ({'Pendiente':vDatos,'En preparación':vEmpaque,'En plataforma':vPlataforma,'En tránsito':vTransito}[g.estado])(g);
+}
+function vDatos(g) {   // P3
+  app.innerHTML = `${cab(g)}${S.aviso ? `<p class="msg ok" role="status">${S.aviso}</p>` : ''}
+    <div class="card"><div class="grid"><div><label for="dest">Destinatario</label><input id="dest" value="${g.cli}"><label for="tel">Teléfono</label><input id="tel" value="${g.tel}"></div>
+    <div><label for="dir">Dirección</label><input id="dir" value="${g.dir}"><label for="tra">Transportadora</label><select id="tra"><option>${TRA}</option></select></div>
+    <div><label for="con">Conductor (obligatorio)</label><select id="con" aria-describedby="ce" ${g.err?'aria-invalid="true"':''}><option value="">Selecciona un conductor</option><option ${g.conductor?'selected':''}>${CON}</option></select>
+    <div id="ce" class="fe" ${g.err?'':'hidden'}>✕ Falta el conductor. Selecciónalo para continuar.</div></div></div></div>
+    <p><button id="back">← Volver a pedidos</button> <button class="pri" id="ready">Lista para empacar</button></p>`;
+  document.getElementById('con').onchange = e => { g.conductor = e.target.value; g.err = false; document.getElementById('ce').hidden = true; e.target.removeAttribute('aria-invalid'); };
+  document.getElementById('back').onclick = () => { location.hash = '#p1'; };
+  document.getElementById('ready').onclick = () => { if (!g.conductor) { g.err = true; vDatos(g); document.getElementById('con').focus(); say('Falta el conductor'); return; }
+    S.aviso = ''; g.estado = 'En preparación'; log(g, 'En preparación'); guia(); };
+}
+function vEmpaque(g) {   // P4
+  app.innerHTML = `${cab(g)}<div class="card"><h2>Registrar empaque</h2><div class="grid"><div><label for="caj">Cajas</label><input id="caj" inputmode="numeric" value="${g.cajas}"></div>
+    <div><label for="lio">Líos</label><input id="lio" inputmode="numeric" value="${g.lios}"></div><div><label for="fle">Flete ($)</label><input id="fle" inputmode="numeric" value="${g.flete}"></div></div></div>
+    <div id="m" role="alert"></div><p><button id="back">← Regresar a pendiente</button> <button class="pri" id="mov">Mover a plataforma</button></p>`;
+  ['caj','lio','fle'].forEach(k => document.getElementById(k).oninput = e => { g[{caj:'cajas',lio:'lios',fle:'flete'}[k]] = e.target.value; g.saved = hhmm(); document.querySelector('[data-saved]').textContent = `✓ Guardado automáticamente · ${g.saved}`; });
+  document.getElementById('back').onclick = () => { g.estado = 'Pendiente'; guia(); };
+  const mov = document.getElementById('mov');
+  mov.onclick = () => { if (!/^\d+$/.test(g.cajas.trim()) || !/^\d+$/.test(g.lios.trim())) { document.getElementById('m').innerHTML = '<div class="msg er">✕ Escribe cajas y líos como números enteros.</div>'; return; }
+    mov.disabled = true; mov.textContent = 'Moviendo…'; setTimeout(() => { g.estado = 'En plataforma'; log(g, 'En plataforma'); vPlataforma(g, true); }, 900); };
+}
+function vPlataforma(g, llega) {   // P4b: el foco nunca queda en una acción irreversible
+  app.innerHTML = `${cab(g)}<div class="card"><h2>Registrar empaque</h2><p class="sub">${g.cajas} cajas · ${g.lios} líos · flete $ ${g.flete} · ${g.tra} · ${g.conductor || CON}</p></div>
+    <div id="m" role="alert"><div class="msg ok" id="platmsg" tabindex="-1">${llega ? '✓ La guía está en plataforma. Revisa los datos antes de despachar.' : 'La guía está en plataforma.'}</div></div>
+    <p><button class="pri" id="desp">Despachar · pasa a En tránsito</button></p>`;
+  document.getElementById('platmsg').focus();
+  document.getElementById('desp').onclick = confirmar;
+}
+function confirmar() {
+  const g = S.cur; lastFocus = document.getElementById('desp');
+  const sc = document.createElement('div'); sc.className = 'scrim'; sc.id = 'scrim';
+  sc.innerHTML = `<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="ct"><h2 id="ct">¿Despachar la guía ${g.num}?</h2><p style="margin:0">La guía pasará a <b>En tránsito</b>. Revisa que sean los datos de esta guía.</p>
+    <dl><dt>Guía</dt><dd>${g.num}</dd><dt>Destino</dt><dd>${g.cli} · ${g.city}</dd><dt>Pedidos</dt><dd>${lista(g)}</dd><dt>Conductor</dt><dd>${g.conductor || CON}</dd><dt>Empaque</dt><dd>${g.cajas} cajas · ${g.lios} líos</dd></dl>
+    <div class="row"><button id="cancel">Cancelar (Esc)</button><button class="pri" id="confirm">Despachar</button></div></div>`;
+  document.body.appendChild(sc);
+  const f = [sc.querySelector('#cancel'), sc.querySelector('#confirm')]; f[0].focus(); trap(sc, () => f, () => { cerrar(); say('Despacho cancelado. La guía sigue En plataforma.'); });
+  f[0].onclick = () => { cerrar(); say('Despacho cancelado. La guía sigue En plataforma.'); };
+  f[1].onclick = () => { cerrar(true); despachar(); };
+}
+function despachar() {
+  const g = S.cur, b = document.getElementById('desp'), m = document.getElementById('m');
+  b.disabled = true; b.textContent = 'Despachando…'; m.innerHTML = ''; say('Despachando la guía');
+  setTimeout(() => { g.dtries++;
+    if (g.dtries === 1) {   // el prompt pide un error en el primer intento de «Despachar», con reintento
+      b.disabled = false; b.textContent = 'Despachar · pasa a En tránsito';
+      m.innerHTML = '<div class="msg er">✕ No se pudo despachar: el servidor no respondió. La guía sigue <b>En plataforma</b> y tus datos están guardados. <button id="dretry">Reintentar despacho</button></div>';
+      document.getElementById('dretry').onclick = despachar; document.getElementById('dretry').focus(); return; }
+    g.estado = 'En tránsito'; log(g, 'En tránsito'); S.undoUntil = Date.now() + UNDO_S*1000; vTransito(g); }, 900);
+}
+function vTransito(g) {   // P5
+  const vigente = Date.now() < S.undoUntil && S.cur === g;
+  app.innerHTML = `${vigente ? `<div class="msg ok undo" role="status" id="ub"><span>✓ Guía ${g.num} despachada: ahora está En tránsito.</span><button id="undo">Deshacer (<span id="left">${UNDO_S}</span> s)</button></div>` : `<div class="msg ok" role="status">✓ Guía ${g.num} despachada: ahora está En tránsito.</div>`}
+    ${cab(g)}<div class="card"><b>Resumen</b><p class="sub" style="margin:4px 0">${g.cli} · ${g.dir} · ${g.tra} · ${(g.conductor || CON)} · ${g.cajas} cajas, ${g.lios} líos · Flete $ ${g.flete}</p></div>
+    <div class="card"><b>Historial</b><ol class="hist">${g.hist.map(h=>`<li><b>${h.t}</b> · ${h.st} · ${h.by}</li>`).join('')}</ol></div>
+    <p><button class="pri" id="sig">Ver siguiente guía</button> <a href="#guias">Ver todas las guías</a></p>`;
+  document.getElementById('sig').onclick = () => { clearInterval(S.timer); S.sel = new Set(); S.page = 1; S.cur = null; location.hash = '#p1'; };
+  if (vigente) { document.getElementById('undo').onclick = () => { clearInterval(S.timer); S.undoUntil = 0; g.estado = 'En plataforma'; log(g, 'Despacho deshecho → En plataforma'); vPlataforma(g, false);
+      document.getElementById('platmsg').innerHTML = '✓ Se deshizo el despacho: la guía volvió a <b>En plataforma</b>.'; say('Se deshizo el despacho'); };
+    clearInterval(S.timer); S.timer = setInterval(() => { const s = Math.ceil((S.undoUntil - Date.now())/1000), e = document.getElementById('left');
+      if (!e) return clearInterval(S.timer); if (s <= 0) { clearInterval(S.timer); const ub = document.getElementById('ub'); ub.className = 'msg wr'; ub.innerHTML = 'El plazo para deshacer terminó: la guía sigue En tránsito.'; say('El plazo para deshacer terminó'); } else e.textContent = s; }, 250); }
+}
+
+// ---- Guías (HZ-04, HZ-05): lista con estado; las guías por completar aparecen primero con lo que les falta
+function guiasVista() {
+  const falta = g => ({Pendiente: g.conductor ? 'Falta: marcar «Lista para empacar»' : 'Falta: conductor', 'En preparación':'Falta: mover a plataforma', 'En plataforma':'Falta: despachar', 'En tránsito':'—'}[g.estado]);
+  const ord = [...S.guias].sort((a,b) => ESTADOS.indexOf(a.estado) - ESTADOS.indexOf(b.estado) || a.num.localeCompare(b.num));
+  app.innerHTML = `<h1>Guías</h1><p class="sub">Las guías por completar aparecen primero.</p>${ord.length ? `<div class="tw" role="region" aria-label="Tabla de guías" tabindex="0"><table><thead><tr><th scope="col">Guía</th><th scope="col">Destinatario</th><th scope="col">Estado</th><th scope="col">Qué falta</th><th scope="col">Acción</th></tr></thead>
+    <tbody>${ord.map(g=>`<tr data-g="${g.num}"><td>${g.num}</td><td>${g.cli} · ${g.city}</td><td><span class="pill">${g.estado}</span></td><td>${falta(g)}</td><td><button data-abrir="${g.num}" aria-label="Abrir ${g.num}">Abrir</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="card">Todavía no hay guías. Créalas desde <a href="#p1">Pedidos pendientes</a>.</p>'}`;
+  app.querySelectorAll('[data-abrir]').forEach(b => b.onclick = () => { S.cur = S.guias.find(g=>g.num===b.dataset.abrir); S.aviso = ''; location.hash = '#g'; });
+}
+
+function route() {
+  const h = location.hash || '#p1';
+  document.getElementById('m-p1').toggleAttribute('aria-current', h === '#p1'); document.getElementById('m-guias').toggleAttribute('aria-current', h === '#guias' || h === '#g');
+  if (h === '#p1') p1(); else if (h === '#guias') guiasVista(); else if (h === '#g') guia(); else p1();
+  app.focus();
+}
+document.addEventListener('keydown', e => { const el = e.target, escribe = (el.tagName === 'INPUT' && el.type !== 'checkbox') || ['SELECT','TEXTAREA'].includes(el.tagName);
+  if (e.key.toLowerCase() === 'g' && !escribe && !document.getElementById('scrim') && (location.hash || '#p1') === '#p1' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); generar(); } });
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
