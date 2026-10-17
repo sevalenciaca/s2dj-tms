@@ -1,0 +1,13 @@
+Aceptación de la iteración 2 de C · 2026-10-17T07:21:16.952Z · base http://127.0.0.1:8765/final-c/
+PASA  CI-01  El Roble: Andrés Mejía · ABC123 / Luis Ospina · DEF456 · Rápido Caldas: Andrés Mesa · GHI789 / Carlos Ruiz · JKL012 · al cambiar de transportadora el conductor queda «»
+PASA  CI-02  «Guía de despacho TMS-2026-0412 Pendiente» · «Paso 2 de 4: datos de entrega · Ferretería La 30 → Manizales»
+PASA  CI-03  E → «Guía de despacho TMS-2026-0412 En preparación» · M mueve y recupera · D abre la confirmación=true y la guía sigue En plataforma=true
+PASA  CI-04  tras recargar: «Guía de despacho TMS-2026-0412 En plataforma» · cajas=5
+PASA  CI-05  deshacer desde Guías: «Guía de despacho TMS-2026-0412 En plataforma»
+PASA  CI-06  lista: «TMS-2026-0412Ferretería La 30 PE07-0001201En tránsito02:21Deshacer despacho» · menú marcado: Guías · axe serias: ninguna
+PASA  CI-07  dentro de una guía el menú no marca «Pedidos pendientes» ni «Guías» (0 marcados)
+PASA  CI-08  la lista sobrevive a recargar=true · retomar abre «Guía de despacho TMS-2026-0412 En plataforma»
+PASA  CI-09  guía interrumpida: «TMS-2026-0412 (en curso)Agro El Cafetal PE31-0001202Pendiente02:21Retomar» → retomar vuelve al paso 2
+PASA  CI-10  Guías a 390 px sin desplazamiento horizontal
+
+Resumen: 10/10 pasan

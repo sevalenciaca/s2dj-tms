@@ -26,5 +26,7 @@ jobs:
         run: python3 -m http.server 8765 --bind 127.0.0.1 &
       - name: Aceptación de HZ-01 (A como línea base, C debe pasar todo)
         run: node hz01_aceptacion.js http://127.0.0.1:8765/
+      - name: "Iteración 2 de C (derivada de R3): conductor por transportadora, título, Guías, retomar, deshacer y atajos"
+        run: node iteracion2_aceptacion.js http://127.0.0.1:8765/
       - name: E2E del flujo crítico solo con teclado + axe (1440 y 390 px)
         run: node e2e_flujo_teclado.js http://127.0.0.1:8765/

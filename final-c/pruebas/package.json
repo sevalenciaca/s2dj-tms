@@ -1,9 +1,10 @@
 {
   "name": "s2dj-prueba-c",
   "private": true,
-  "description": "Prueba de aceptación de HZ-01 (confirmar o deshacer el despacho) sobre A y C",
+  "description": "Pruebas de aceptación de C: HZ-01 (confirmar o deshacer el despacho) sobre A y C, e iteración 2 (R3)",
   "scripts": {
-    "test": "node hz01_aceptacion.js && node e2e_flujo_teclado.js",
+    "test": "node hz01_aceptacion.js && node iteracion2_aceptacion.js && node e2e_flujo_teclado.js",
+    "test:iteracion2": "node iteracion2_aceptacion.js",
     "test:aceptacion": "node hz01_aceptacion.js",
     "test:e2e": "node e2e_flujo_teclado.js"
   },
