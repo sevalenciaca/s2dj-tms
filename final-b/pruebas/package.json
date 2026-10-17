@@ -1,0 +1,12 @@
+{
+  "name": "s2dj-prueba-b",
+  "private": true,
+  "description": "Criterios de aceptaci\u00f3n de la versi\u00f3n B (alternativa generada con IA), tomados del prompt del Taller 6",
+  "scripts": {
+    "test": "node b_aceptacion.js"
+  },
+  "devDependencies": {
+    "playwright-core": "1.48.2",
+    "axe-core": "4.10.2"
+  }
+}

@@ -1,0 +1,28 @@
+# Pipeline de calidad de la versión B (HCI Lab · Calidad: E2E del flujo crítico + axe sin infracciones serias).
+name: Calidad B
+
+on:
+  pull_request:
+    paths: ["final-b/**", ".github/workflows/calidad-b.yml"]
+  push:
+    branches: [main]
+    paths: ["final-b/**", ".github/workflows/calidad-b.yml"]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final-b/pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - name: Servir el sitio
+        working-directory: .
+        run: python3 -m http.server 8765 --bind 127.0.0.1 &
+      - name: Criterios de aceptación de B (tomados del prompt del Taller 6)
+        run: node b_aceptacion.js http://127.0.0.1:8765/
