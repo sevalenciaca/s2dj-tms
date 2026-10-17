@@ -32,7 +32,7 @@
 ## Resultados (17-oct-2026, sobre el código local antes de publicar)
 
 - Iteración 2: **10 de 10** (`pruebas/resultado_2026-10-17_iteracion2.txt`).
-- Aceptación de HZ-01 (regresión): **C 8 de 8**; A, 0 de 7 en la línea base, es decir, falla los 2 criterios que se pueden ejecutar (`resultado_2026-10-17_hz01.txt`).
+- Aceptación de HZ-01 (regresión): **C 8 de 8**; A falla los 2 criterios que se pueden ejecutar y los otros 5 figuran como NO APLICA (S-09) (`resultado_2026-10-17_hz01.txt`).
 - Recorrido solo con teclado + axe, 1440 y 390 px: todas las comprobaciones pasan (`resultado_2026-10-17_e2e.txt`).
 - Reflujo a 320 y 390 px en 7 pantallas (incluida «Guías»): sin desplazamiento horizontal.
 - Categorías de WAVE medidas con axe: 0 fallas.

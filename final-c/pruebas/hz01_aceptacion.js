@@ -21,6 +21,7 @@ async function enPlataforma(p, url) {           // llega al estado En plataforma
 async function casos(p, version, url, shot) {
   const r = [];
   const ok = (id, cond, detalle) => r.push({ version, id, resultado: cond ? 'PASA' : 'FALLA', detalle });
+  const noAplica = (id, motivo) => r.push({ version, id, resultado: 'NO APLICA', detalle: motivo });   // S-09: no se cuenta como falla
 
   // CA-06 · al llegar a En plataforma el foco no queda en «Despachar» y Enter no despacha
   await enPlataforma(p, url);
@@ -40,7 +41,7 @@ async function casos(p, version, url, shot) {
   if (dlg) await shot('C01_confirmacion');
 
   if (!dlg) {                                   // A no tiene confirmación: el resto no aplica
-    for (const id of ['CA-02', 'CA-03', 'CA-04', 'CA-05', 'CA-07']) ok(id, false, 'no aplica: no existe la confirmación');
+    for (const id of ['CA-02', 'CA-03', 'CA-04', 'CA-05', 'CA-07']) noAplica(id, 'no aplica: no existe la confirmación (depende de CA-01)');
     return r;
   }
 
@@ -117,6 +118,7 @@ async function plazo(b, url) {                   // CA-07 · sin límite de tiem
   console.log(`Prueba de aceptación HZ-01 · ${fecha} · base ${BASE}`);
   for (const t of todos) console.log(`${t.version} ${t.id.padEnd(6)} ${t.resultado.padEnd(6)} ${t.detalle}`);
   const c = todos.filter(t => t.version === 'C');
-  console.log(`\nResumen C: ${c.filter(t => t.resultado === 'PASA').length}/${c.length} pasan · A: ${todos.filter(t => t.version === 'A' && t.resultado === 'PASA').length}/${todos.filter(t => t.version === 'A').length} pasan (línea base)`);
+  const a = todos.filter(t => t.version === 'A'), ejec = a.filter(t => t.resultado !== 'NO APLICA');
+  console.log(`\nResumen C: ${c.filter(t => t.resultado === 'PASA').length}/${c.length} pasan · A (línea base): ${a.filter(t => t.resultado === 'PASA').length} de ${ejec.length} ejecutables pasan; ${a.length - ejec.length} no aplican porque dependen de la confirmación`);
   process.exitCode = c.every(t => t.resultado === 'PASA') ? 0 : 1;
 })();

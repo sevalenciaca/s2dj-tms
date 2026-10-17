@@ -1,18 +1,18 @@
-Prueba de aceptación HZ-01 · 2026-10-17T07:21:11.606Z · base http://127.0.0.1:8765/
+Prueba de aceptación HZ-01 · 2026-10-17T07:23:19.687Z · base http://127.0.0.1:8765/
 A CA-06  FALLA  foco=#desp · tras Enter: «Guía TMS-2026-0412 ✓ En tránsito»
 A CA-01  FALLA  sin diálogo · estado «Guía TMS-2026-0412 ✓ En tránsito»
-A CA-02  FALLA  no aplica: no existe la confirmación
-A CA-03  FALLA  no aplica: no existe la confirmación
-A CA-04  FALLA  no aplica: no existe la confirmación
-A CA-05  FALLA  no aplica: no existe la confirmación
-A CA-07  FALLA  no aplica: no existe la confirmación
+A CA-02  NO APLICA no aplica: no existe la confirmación (depende de CA-01)
+A CA-03  NO APLICA no aplica: no existe la confirmación (depende de CA-01)
+A CA-04  NO APLICA no aplica: no existe la confirmación (depende de CA-01)
+A CA-05  NO APLICA no aplica: no existe la confirmación (depende de CA-01)
+A CA-07  NO APLICA no aplica: no existe la confirmación (depende de CA-01)
 C CA-06  PASA   foco=#platmsg · tras Enter: «Guía de despacho TMS-2026-0412 En plataforma»
 C CA-01  PASA   diálogo con resumen · estado «Guía de despacho TMS-2026-0412 En plataforma»
 C CA-02  PASA   foco inicial=#cancel · tras Esc: «Guía de despacho TMS-2026-0412 En plataforma», foco=#desp
 C CA-03  PASA   espera «Despachando…» · «Guía de despacho TMS-2026-0412 ✓ En tránsito» · Puedes deshacerlo mientras sigas en esta pantalla o, después, desde «Guías».
 C CA-04  PASA   «Guía de despacho TMS-2026-0412 En plataforma» · cajas/líos/flete=6/2/30.000 · foco=#platmsg
-C CA-04b PASA   historial: 02:20 · Pendiente · Marta R. | 02:20 · En preparación · Marta R. | 02:21 · En plataforma · Marta R. | 02:21 · En tránsito · Marta R. | 02:21 · Despacho deshecho → En plataforma · Marta R. | 02:21 · En tránsito · Marta R.
+C CA-04b PASA   historial: 02:23 · Pendiente · Marta R. | 02:23 · En preparación · Marta R. | 02:23 · En plataforma · Marta R. | 02:23 · En tránsito · Marta R. | 02:23 · Despacho deshecho → En plataforma · Marta R. | 02:23 · En tránsito · Marta R.
 C CA-05  PASA   error visible · estado durante el error «Guía de despacho TMS-2026-0412 En plataforma» · foco=#dretry · tras reintentar «Guía de despacho TMS-2026-0412 ✓ En tránsito»
 C CA-07  PASA   Deshacer disponible tras 2 min=true · tras pasar a la siguiente guía y volver=false
 
-Resumen C: 8/8 pasan · A: 0/7 pasan (línea base)
+Resumen C: 8/8 pasan · A (línea base): 0 de 2 ejecutables pasan; 5 no aplican porque dependen de la confirmación
