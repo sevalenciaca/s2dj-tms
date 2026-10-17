@@ -3,10 +3,11 @@
   "private": true,
   "description": "Pruebas de aceptación de C: HZ-01 (confirmar o deshacer el despacho) sobre A y C, e iteración 2 (R3)",
   "scripts": {
-    "test": "node hz01_aceptacion.js && node iteracion2_aceptacion.js && node e2e_flujo_teclado.js",
+    "test": "node hz01_aceptacion.js && node iteracion2_aceptacion.js && node iteracion3_accesibilidad.js && node e2e_flujo_teclado.js",
     "test:iteracion2": "node iteracion2_aceptacion.js",
     "test:aceptacion": "node hz01_aceptacion.js",
-    "test:e2e": "node e2e_flujo_teclado.js"
+    "test:e2e": "node e2e_flujo_teclado.js",
+    "test:iteracion3": "node iteracion3_accesibilidad.js"
   },
   "devDependencies": {
     "playwright-core": "1.48.2",

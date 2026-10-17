@@ -1,0 +1,14 @@
+Iteración 3 de C · accesibilidad · 2026-10-17T13:41:09.844Z · base http://127.0.0.1:8765/final-c/
+PASA  A3-01  con Tab se llega a «Accesibilidad» (9 Tab) · abre con Enter, foco en el título · 40 Tab sin salir del panel (0 fuera) · Esc cierra y devuelve el foco
+PASA  A3-02  fondo rgb(15, 23, 38) · tras recargar data-tema=oscuro
+PASA  A3-03  sistema oscuro → oscuro · sistema claro → claro
+PASA  A3-04  4 temas × 8 estados (incluido el panel abierto): 0 infracciones serias
+PASA  A3-05  h1 a 56px (28 px al 100 %) · desborde en: ninguno (1280 px)
+PASA  A3-06  letter-spacing 1.68px · desborde en: ninguno
+PASA  A3-07  apagados: G no hace nada (true), la pista «(G)» no se ve, 0 aria-keyshortcuts · encendidos: G genera la guía (true)
+PASA  A3-08  sistema con movimiento reducido → data-movimiento=reducido · transición 0s
+PASA  A3-09  marco de foco 5px · botón «Sincronizar» de 48 px
+PASA  A3-10  avisos leídos: «1 pedido seleccionado» · «Guía de despacho TMS-2026-0412 Pendiente. Paso 2 de 4: datos»
+PASA  A3-11  tras restablecer: tema claro, contraste «», texto 16px, atajos on
+
+Resumen: 11/11 pasan
