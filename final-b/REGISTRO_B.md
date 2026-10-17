@@ -52,5 +52,5 @@ formatos.html  Computador · Tableta · Celular · Reloj (confirmación y result
 - **No hay búsqueda tolerante** más allá de quitar tildes y mayúsculas, ni atajos fuera de G, ni ayuda contextual ni indicador de conexión.
 - **El error de «Despachar» ocurre solo en el primer intento de la sesión**, como pide el prompt.
 - Los **cuatro formatos son diseños estáticos de apoyo**; solo el computador es navegable. No se probaron en dispositivos reales.
-- **Ninguna persona ha probado B.** Las pruebas verifican el prompt, no la usabilidad.
+- **Ningún usuario real ha probado B.** Solo EV-SV (autor del sistema) la recorrió el 17-oct: T1 sin ayuda; T2 funcionó dentro de los 10 s y después no hay forma de corregir; al recargar se pierde todo (`taller6/paso7_prueba_interna/`). Las pruebas automáticas verifican el prompt, no la usabilidad.
 - Datos ficticios; sin backend.
